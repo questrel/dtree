@@ -1,0 +1,107 @@
+draft documentation outline
+
+qtl = QuesTreL Template Library
+
+A qtl::container object is analogous to a std::container object
+where container is a string or scalar or tuple<container,container,...> or vector<container>
+The only methods that have been implemented are the ones that we needed for this project
+generally, conversion to/from the correspoinding std::container, read only forward iterators, and push_back
+todo: add more std::methods to support other uses
+All containers are stored as strings, and are comparable with memcmp
+scalars can contain long or double or decfloat.
+todo: full support for decfloat arithmetic
+scalars take up as much space as needed for the required precision,
+but try to be compact for values that could fit in char/short/half float
+arithmetic and comparison operators don't care about the type of object they operate on,
+but are not expected to give sensible results if you do arithmetic on strings 
+or comparisons between scalars and strings
+
+Intervals represent a range of scalar or string values.
+Intervals are represented by their boundaries.
+Boundary points are not scalar or string values, but fall between scalar or string values
+(thus there is no need to distinguish whether an interval between boundaries includes or excludes its end points)
+Arithmetic on intervals yields an interval
+todo: support interval versions of <cmath> functions
+Dividing by an interval that contains 0 yields an interval that contains the projective infinity
+(which is equivalent to the complement of a conventional finite interval,
+and is represented by an upper boundary that is less than the lower boundary)
+comparisons between intervals can yield True, False, or Maybe
+Logical operators on True/False/Maybe use a 3 valued logic system.
+(Logical operators also work on intervals)
+
+todo: verify that interval<object> works on arbitrary totally ordered objects, not just qtl::string and qtl::scalar
+and that interval arithmetic works on any ordered field.
+
+
+Rows in the database are tuples of values that can be strings or scalars that are stored in strings.
+Nodes in the database are tuples of intervals of values
+
+Using interval arithmetic and 3 valued logic, an arbitrary predicate can be evaluated on a node
+to determine wheter the node, and the values in the node do/don't/maybe satisfy the predicate.
+When a node doesn't satisfy the predicate, it can be skipped.
+When a node does satisfy the predicate, no further tests need be done on values within the node,
+todo: in the case of aggregate queries (sum, avg, variance, standard deviation...)
+  a cached value can be returned immediately without need  to descend within the node to find the individual values.
+When values within a node may satisfy the predicate, it can be descended to find nodes with narrower intervals,
+until the predicate can be reduced to True or False
+
+todo: compress common prefix of boundaries of an interval
+todo: compress common prefix of boundary partitions within a node
+todo: support this with a general shared prefix for qtl::string objects
+
+nodes are a internal implementation detail not normally visible to the c++ user
+the interface to the user looks more like a map with a flexible index
+e.g. the equivalent of
+  INSERT INTO table_name VALUES 'Column 1', 'Column 2', 'string value', 'then some numbers', 1, 2, 3.14159, 'now more strings';
+might be
+  map[{"table_name"_s}] = {"Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "now more strings"_s};
+but using column 0 as a table name is just a convention that the user may want to adopt (say, when implementing an sql database)
+our class doesn't care, so the above insert would also have been equivalent to
+  map[{}] = {"table_name"_s, "Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "now more strings"_s};
+or
+  map[{"table_name"_s, "Column 1"_s}][{"Column 2"_s}] = {"string value"_s, "then some numbers"_s, 1, 2, 3.14159, "now more strings"_s};
+or
+  map[{"table_name"_s,"Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "now more strings"_s}] = {};
+the value could be deleted with
+  map[{"table_name"_s,"Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "now more strings"_s}] = nullptr
+the index could also be an arbitrary predicate, so
+  SELECT * FROM table_name WHERE column(5) + column(6) < column(7) and column(8) <= 'now';
+might be written as
+  for( auto row:map[{"table_name"_s][ column(5) + column(6) < column(7) && column(8) <= "now"] ){
+    std::cout << row << std::endl; // unlike the sql query, this print statement would include table_name as column(0)
+  }
+
+notation
+The user defined suffix _s, can be used to create qtl::string literals,
+  "string"_s
+analogous to std::literals::string_literals::operator""s 
+or qtl::scalar literals
+  123_s
+analogous to to 123l or 123f
+
+the interval {x : a < x <= b} can be written as
+  a < x::x <= b
+the unbounded interval  {x : a <= x} can be written as
+  a <= x::x
+the unbounded interval  {x : x < b} can be written as
+  x::x < b
+The point interval {x : a <= x <= a} can also be written as
+  x::x==a
+or just 
+  a
+when it is clear by context that an interval is being used
+The interval {x : x <= a || b < x } i.e. the complement of {x : a < x <= b} can be written as
+  x::x <= a || b < x::x 
+(those are also recognized by the SQL parser
+In C++ only, a boundary <a can be written as 
+  x::x | a
+or as
+   --a
+A boundary >a can be written as
+  a | x::x
+or as 
+  a++
+
+if lower and upper are boundaries, the interval between them can also be written as
+  (lower,upper)
+
