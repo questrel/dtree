@@ -54,6 +54,8 @@ sql.test.out: qtl/tree.h qtl/expr.h qtl/number.h qtl/interval.h qtl/store.h qtl/
 
 expr.test.out: qtl/tree.h qtl/interval.h qtl/number.h
 
+canonical.out: canonical.cpp
+
 %.test.out: qtl/%.h qtl/out.h qtl/string.h
 	( $(CXX) $(CXXFLAGS) -v -o $@ -g  -DTEST_H='"'$<'"' -fsanitize=address -fdiagnostics-color=always test.cpp 2>&1 && cp -av $? compiles  ) | tee ./$(*F).make.$(subst /,_,$(firstword ${CXX})).log
 
