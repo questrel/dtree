@@ -52,22 +52,22 @@ todo: support this with a general shared prefix for qtl::string objects
 nodes are a internal implementation detail not normally visible to the c++ user
 the interface to the user looks more like a map with a flexible index
 e.g. the equivalent of
-  INSERT INTO table_name VALUES 'Column 1', 'Column 2', 'string value', 'then some numbers', 1, 2, 3.14159, 'now more strings';
+  INSERT INTO table_name VALUES 'Column 1', 'Column 2', 'string value', 'then some numbers', 1, 2, 3.14159, 'now another string';
 might be
-  map[{"table_name"_s}] = {"Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "now more strings"_s};
+  map[{"table_name"_s}] = {"Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "now another string"_s};
 but using column 0 as a table name is just a convention that the user may want to adopt (say, when implementing an sql database)
 our class doesn't care, so the above insert would also have been equivalent to
-  map[{}] = {"table_name"_s, "Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "now more strings"_s};
+  map[{}] = {"table_name"_s, "Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "now another string"_s};
 or
-  map[{"table_name"_s, "Column 1"_s}][{"Column 2"_s}] = {"string value"_s, "then some numbers"_s, 1, 2, 3.14159, "now more strings"_s};
+  map[{"table_name"_s, "Column 1"_s}][{"Column 2"_s}] = {"string value"_s, "then some numbers"_s, 1, 2, 3.14159, "now another string"_s};
 or
-  map[{"table_name"_s,"Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "now more strings"_s}] = {};
+  map[{"table_name"_s,"Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "now another string"_s}] = {};
 the value could be deleted with
-  map[{"table_name"_s,"Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "now more strings"_s}] = nullptr
+  map[{"table_name"_s,"Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "now another string"_s}] = nullptr;
 the index could also be an arbitrary predicate, so
   SELECT * FROM table_name WHERE column(5) + column(6) < column(7) and column(8) <= 'now';
 might be written as
-  for( auto row:map[{"table_name"_s][ column(5) + column(6) < column(7) && column(8) <= "now"] ){
+  for( auto row:map[{"table_name"_s][ column(5) + column(6) < column(7) && column(8) <= "now"_s] ){
     std::cout << row << std::endl; // unlike the sql query, this print statement would include table_name as column(0)
   }
 
@@ -83,7 +83,7 @@ the interval {x : a < x <= b} can be written as
   a < x::x <= b
 the unbounded interval  {x : a <= x} can be written as
   a <= x::x
-the unbounded interval  {x : x < b} can be written as
+the unbounded interval {x : x < b} can be written as
   x::x < b
 The point interval {x : a <= x <= a} can also be written as
   x::x==a
@@ -92,7 +92,7 @@ or just
 when it is clear by context that an interval is being used
 The interval {x : x <= a || b < x } i.e. the complement of {x : a < x <= b} can be written as
   x::x <= a || b < x::x 
-(those are also recognized by the SQL parser
+(those are also recognized by the test SQL parser)
 In C++ only, a boundary <a can be written as 
   x::x | a
 or as
