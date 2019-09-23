@@ -1,6 +1,8 @@
 #!/bin/bash -x
+# run this script in the same directory as your makefile!
+make
 if [[ ! -e sql.dat.99 ]] ; then 
-   head -99 /usr/share/dict/words | chris/canonical.out -S | ./sql.test.out
+   head -99 /usr/share/dict/words | canonical.out -S | ./sql.test.out
    cp -av sql.dat sql.dat.99
 fi
 cp -av  sql.dat.99 sql.dat # restore default
