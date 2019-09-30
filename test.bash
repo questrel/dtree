@@ -1,8 +1,10 @@
 #!/bin/bash -x
 # run this script in the same directory as your makefile!
 make
-if [[ ! -e sql.dat.99 ]] ; then 
-   head -99 /usr/share/dict/words | canonical.out -S | ./sql.test.out
+if [[ ! -s sql.dat.99 ]] ; then 
+   make canonical.out
+   rm *.map # shared map not working
+   head -99 /usr/share/dict/words | ./canonical.out -S | ./sql.test.out
    cp -av sql.dat sql.dat.99
 fi
 cp -av  sql.dat.99 sql.dat # restore default

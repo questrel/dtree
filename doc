@@ -49,30 +49,44 @@ todo: compress common prefix of boundaries of an interval
 todo: compress common prefix of boundary partitions within a node
 todo: support this with a general shared prefix for qtl::string objects
 
-nodes are a internal implementation detail not normally visible to the c++ user
+nodes are internal implementation details not normally visible to the c++ user
 the interface to the user looks more like a map with a flexible index
 e.g. the equivalent of
-  INSERT INTO table_name VALUES 'Column 1', 'Column 2', 'string value', 'then some numbers', 1, 2, 3.14159, 'now another string';
+  INSERT INTO table_name VALUES 'Column 1', 'Column 2', 'string value', 'then some numbers', 1, 2, 3.14159, 'then another string';
 might be
-  map[{"table_name"_s}] = {"Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "now another string"_s};
+  map[{"table_name"_s}] = {"Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "then another string"_s};
 but using column 0 as a table name is just a convention that the user may want to adopt (say, when implementing an sql database)
 our class doesn't care, so the above insert would also have been equivalent to
-  map[{}] = {"table_name"_s, "Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "now another string"_s};
+  map[{}] = {"table_name"_s, "Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "then another string"_s};
 or
-  map[{"table_name"_s, "Column 1"_s}][{"Column 2"_s}] = {"string value"_s, "then some numbers"_s, 1, 2, 3.14159, "now another string"_s};
+  map[{"table_name"_s, "Column 1"_s}][{"Column 2"_s}] = {"string value"_s, "then some numbers"_s, 1, 2, 3.14159, "then another string"_s};
 or
-  map[{"table_name"_s,"Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "now another string"_s}] = {};
+  map[{"table_name"_s,"Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "then another string"_s}] = {};
 the value could be deleted with
-  map[{"table_name"_s,"Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "now another string"_s}] = nullptr;
+  map[{"table_name"_s,"Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "then another string"_s}] = nullptr;
 the index could also be an arbitrary predicate, so
-  SELECT * FROM table_name WHERE column(5) + column(6) < column(7) and column(8) <= 'now';
+  SELECT * FROM table_name WHERE column(5) + column(6) < column(7) and 'then' <= column(8);
 might be written as
-  for( auto row:map[{"table_name"_s][ column(5) + column(6) < column(7) && column(8) <= "now"_s] ){
-    std::cout << row << std::endl; // unlike the sql query, this print statement would include table_name as column(0)
+  for( auto row:map[{"table_name"_s][ 5_column + 6_column < 7_column && "then"_s <= 8_column] ){
+    std::cout << row << std::endl; // but unlike the sql query, this print statement would include table_name as column(0)
   }
 
+Expressions can be bound to a symbol table to resove names
+given
+  std::map<std::string,qtl::expr>symtab={
+    {"five"_s,5_column},
+    {"six"_s,6_column},
+    {"seven"_s,7_column},
+    {"eight"_s,8_column},
+    {"const"_s,"then"_s},
+  };
+one could write
+  ("five"_name + "six"_name < "seven"_name  && "const"_name <= "eight"_name).bind(symtab)
+for
+  5_column + 6_column < 7_column && "then"_s <= 8_column 
+
 notation
-The user defined suffix _s, can be used to create qtl::string literals,
+The user defined suffix qtl::literals::operator""_s, can be used to create qtl::string literals,
   "string"_s
 analogous to std::literals::string_literals::operator""s 
 or qtl::scalar literals
