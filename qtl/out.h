@@ -49,14 +49,20 @@ namespace detail{
 #endif
 
 #include "fileno.h"
-#ifndef TRACE
-#ifndef FUZZING 
+#ifdef DEBUG
 #define TRACE(x) x
-#else
+#endif
+#ifdef FUZZING
 #define TRACE(x)
 #endif
-#endif
 #define NOTRACE(x) 
+#ifndef TRACE
+#define TRACE(x)
+#endif
+#ifndef WARN
+#define WARN(x) x
+#endif
+#define NOWARN(x)
 namespace qtl{
   template<typename S> struct rstr{};
   template<>
@@ -589,6 +595,7 @@ struct is_mappish : detail::is_mappish_impl<T>::type { };
 #endif
 
 //namespace qtl{//
+
 template <class T,
   typename = std::enable_if_t<!std::is_same_v<char,T> && !std::is_convertible_v<T, std::string>  && ! std::is_pointer_v<T> && !std::is_same_v<std::string_view,T> > // ok
     ,typename =typename T::iterator
@@ -602,7 +609,7 @@ static  std::ostream& operator<<(std::ostream& os, const T& obj)
 #endif
 {
   NOTRACE( std::cout << __PRETTY_FUNCTION__ <<  has_mapped_type<T>::value << '\n'<<std::flush; )
-  TRACE( std::cout << __PRETTY_FUNCTION__ << " is_mappish: " <<  is_mappish<T>{} << '\n';;) 
+  NOTRACE( std::cout << __PRETTY_FUNCTION__ << " is_mappish: " <<  is_mappish<T>{} << '\n';;) 
   qtl::ios_base::fmtflags f;
   using namespace qtl::literals;
   os >> f;

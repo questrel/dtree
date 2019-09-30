@@ -203,7 +203,7 @@ class operation{
     std::optional<symbol_table> sym;
     operator operand_t()const{ 
       if( cachevalue ){ return *cachevalue; }
-      TRACE( std::cerr << "warning: control may reach end of non-void function\n"; );
+      WARN( std::cerr << "warning: control may reach end of non-void function\n"; );
       return operand_t();
     }
   struct ps:public std::string{
@@ -418,6 +418,25 @@ inline static const std::map<std::string,std::function<operand_t(const std::vect
 	    return operand_t();
           }
 	  return operand_t::abs(v[0]);
+	 }},
+       {"NUMERIC_TO_STRING",[](const std::vector<operand_t> &v){
+          std::stringstream s;
+	  int i=0;
+	  for( auto x:v ){
+	    if( i++ ){ s << ", "; }
+	    if( x.is_point() ){
+              s <<(double)x.l().value();
+            }else{
+	      if( !x.l().is_inf()||x.u().is_inf() ){
+		s <<  (double)x.l().value() << ((lim)x.l().ma()==infi?" <=":" <");
+              }
+  	      s << " x::x ";
+	      if( !x.u().is_inf()||x.l().is_inf() ){
+                s <<  ((lim)x.u().ma()==infi?"< ":"<= ") << (double)x.u().value();
+	      }
+	    }
+	  }
+          return operand_t(std::string(s.str()));
        }}
 };
 
@@ -499,7 +518,8 @@ template<typename Vec=std::vector<operand_t>> static inline operand_t eval_multi
   return d;
 }
 static inline std::string str_column(const operation &t,const std::string& s,const std::vector<std::string>&v={},int precedence=0){
-  return s + "(" + *t.identifier + ")" ;
+  //  return s + "(" + *t.identifier + ")" ;
+  return *t.identifier + "_" + s ;
 }
 static inline std::string str_name(const operation &t,const std::string& s,const std::vector<std::string>&v={},int precedence=0){
   NOTRACE( std::cerr << __PRETTY_FUNCTION__ << '\n'; )
@@ -573,7 +593,8 @@ static inline ps stri_name(const operation &o, const std::string &s,const Vp &v)
 }
 template<typename Vp=vec<ps>>
 static inline ps stri_column(const operation &o, const std::string &s,const Vp &v){
-  return ps( s+"."+ *o.identifier,o.precedence());
+  //  return ps( s+"."+ *o.identifier,o.precedence());
+  return ps( *o.identifier + "_" + s,o.precedence());
 }
 template<typename Vp=std::vector<ps>>
 static inline ps stri_func(const operation &o,const std::string& s,const Vp &v){
@@ -935,13 +956,42 @@ template<typename V=qtl::interval,typename V1=std::vector<V>>
        return (*this).value().eval({},v);
    }  
  }; // end class optexpr
-
+#if 1
+#define X(o,p) \
+ qtl::expr operator o(const qtl::expr &l,const qtl::expr &r){	\
+   return qtl::expr(qtl::op::p,{l,r}); \
+ } \
+ // end define
+   X(*,multiplies)
+   X(/,divides)
+   X(+,plus)
+   X(-,minus)
+   X(<,less)
+   X(<=,less_equal)
+   X(!=,not_equal_to)
+   X(==,equal_to)
+   X(>=,greater_equal)
+   X(>,greater)
+   X(&&,logical_and)
+   X(||,logical_or)
+#undef X
+#endif
    //   double operator~(const operation<double>&x){
    //     return !x;
    //  }
    //  double operator|(const operation<double>&l,operation<double>&r){
    //    return (long)l | (long)r;
    //  }
+ namespace literals{
+     expr operator""_name(const char *c){
+       return expr(qtl::op::name,std::string(c));
+     }
+     expr operator""_column(unsigned long long int i){
+        std::stringstream s;
+	s << i;
+        return expr(qtl::op::column,s.str());
+     }
+   }
 }
 #if __INCLUDE_LEVEL__ + !defined __INCLUDE_LEVEL__ < 1+defined TEST_H
 using qtl::expr=optree<qtl::interval,intvec<lex::string>>;
@@ -1048,4 +1098,3 @@ std::cout << e.stringify() << std::endl;
 //#define \u22A2 ⊢ // error: macro name must be an identifier
 }
 #endif
-

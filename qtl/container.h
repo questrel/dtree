@@ -485,14 +485,14 @@ class vector:public string{
    static inline constexpr int depth=std::min({-1,T::depth...})-1;
 
 #if 1
- tuple():base_t(){} //
+tuple():base_t(){} //
  /*
 ./qtl/container.h:305:2: error: multiple overloads of 'tuple' instantiate to the same signature 'void ()'
  tuple(const T&... t):base_t( (... + string(t,eof(T::depth)) ) ),cache({t...}){
  ^
-./qtl/interval.h:1298:1: note: in instantiation of template class 'lex::tuple<>' requested here
- std::cout << std::defaultfloat << a << " " << #o << " " << b << " = " << c << std::endl;  \
-                                                                               ^
+./qtl/ioerror.h:22:30: note: in instantiation of template class 'lex::tuple<>' requested here
+    os << strerror(errno) << std::endl;
+                             ^
 ./qtl/container.h:303:2: note: previous declaration is here
  tuple():base_t(){} //
  ^
@@ -517,7 +517,7 @@ class vector:public string{
  ^
 
 */
- tuple(const T&... t):base_t( (... + string(t,eof(T::depth)) ) ),cache({t...}){
+ tuple(const T&... t/*,std::enable_if_t<sizeof...(t)!=0,int>=0*/):base_t( (... + string(t,eof(T::depth)) ) ),cache({t...}){
      NOTRACE( std::cerr  << __PRETTY_FUNCTION__ << std::endl; )
        NOTRACE( (..., (std::cerr << t << ", " )); )
 	 /*fatal*/// TRACE( std::cout << base_t::_this << std::endl; )
