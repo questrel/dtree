@@ -1171,7 +1171,7 @@ template<typename T=lex::scalar>
   at_( [this](int x){return (*I)[x];} ),
   put_([this](std::ostream& s)->std::ostream&{  s<<(*I); return s;} )
   {
-            TRACE( std::cerr << __PRETTY_FUNCTION__ << '(' << i << ')' << '\n'; )
+            NOTRACE( std::cerr << __PRETTY_FUNCTION__ << '(' << i << ')' << '\n'; )
   }
  intvec(const std::vector< T>&s):S(&s),
  size_( [this](){return S->size();} ),

@@ -72,12 +72,30 @@ static auto const assignment_list=
 	   //std::cerr << "dictionary=" << dictionary << '\n';
          }
       })]
-
   ;
  static auto const set_clause=
    (no_case[lit("SET")] >
  assignment_list )
 ;
+
+static auto const alias_list=
+  ( assignment_rule % ',') 
+  [ ([](auto& ctx){
+	 NOTRACE( std::cerr << "alias_list " << __LINE__ << "\n"; )
+	 NOTRACE( std::cerr << "type(_val): " << qtl::type_name<decltype(_val(ctx))>() << "\n"; )
+	 NOTRACE( std::cerr << "type(_attr): " << qtl::type_name<decltype(_attr(ctx))>() << "\n"; )
+	 for( auto x:_attr(ctx) ){
+	   std::cerr << "{" << x.first << ", " << x.second << " = " << x.second.eval(dictionary) << "}" << '\n';
+	   dictionary[x.first]=x.second;
+	   //	   TRACE( std::cerr << "dictionary=" << dictionary << '\n'; )
+         }
+      })]
+  ;
+ static auto const alias_clause=
+   (no_case[lit("ALIAS")] >
+ alias_list )
+;
+
 static inline qtl::store file;
 
 static auto const insert_clause=
@@ -99,7 +117,7 @@ static auto const insert_clause=
 	   NOTRACE( std::cout <<  y  << '\n'; );
            v.push_back(y.l().value().raw());
          }
-	 TRACE( std::cout << v << '\n'; )
+	 NOTRACE( std::cout << v << '\n'; )
 	 file[ *at_c<0>( _attr(ctx) ).identifier ]=v;
 	 NOTRACE( std::cout << file << '\n'; );
       })]
@@ -180,7 +198,7 @@ static auto const select_clause=
          }
 	 TRACE(std::cout << v.predicate << '\n'; )
 	 for( auto r:v ){
-	   TRACE( continue; /* profile just the query with no output */)
+	   NOTRACE( continue; /* profile just the query with no output */)
 	    NOTRACE( std::cout << __LINE__ << "\n"; )
 	    if( at_c<0>( _attr(ctx)).which() == 0 ){
 	      int i=0;
@@ -191,7 +209,7 @@ static auto const select_clause=
               }
 	    }else{
 	      auto p=store::path()+r;
-	      TRACE( std::cout << p << '\n');
+	      NOTRACE( std::cout << p << '\n');
 	      for( auto e: boost::get<std::vector<qtl::expr>>( at_c<0>(_attr(ctx)) ) ){
 	        std::cout << e.bind(cols).eval(dictionary,p)  << ',';
               }
@@ -246,7 +264,7 @@ static auto const delete_clause=
   ;
 
  static auto const sql_rule=
-   ( (select_clause | set_clause | insert_clause | delete_clause) > (lit(";")|x3::eoi) )
+   ( (select_clause | set_clause | alias_clause | insert_clause | delete_clause) > (lit(";")|x3::eoi) )
    ;
 
 } // end namespace qtl
@@ -411,17 +429,17 @@ if( argc==1 || argv [1][0] == '<' ){
     cinbuf = std::cin.rdbuf(); 
     std::cin.rdbuf(in.rdbuf()); //redirect std::cin
   }
-  qtl::store::root.get("sql.dat");
+  qtl::file.get("sql.dat");
   int tellg=0; 
  std::string i;
-  while( std::cin.good() && tellg<1000 ){
+ while( std::cin.good() /* && tellg<1000*/ ){
    std::getline(std::cin, i);
    TRACE( std::cout << i << '\n'; )
      i += '\n';
    parse_test(i);
-   //qtl::store::root.save("sql.dat");
+   //   qtl::store::root.save("sql.test.dat");
   }
-  qtl::store::root.save("sql.dat");
+ qtl::file.save("sql.dat");
   std::cout << "test passed\n";
   exit(0);
  }

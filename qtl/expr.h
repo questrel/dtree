@@ -1,4 +1,4 @@
-#include "interval.h"
+ #include "interval.h"
 #include "tree.h"
 #define BOOST_SPIRIT_X3_DEBUG
 #include <boost/spirit/home/x3.hpp>
@@ -205,6 +205,25 @@ static auto const num_rule=x3::rule<struct num_rule, qtl::expr>{} =
  static auto const name_rule=
    as_string( lexeme[(lit("x::x")>>!id_char) | lit("?") | (alpha >> *id_char) | (char_('"') > *(char_ - char_('"')) > char_('"'))]  );
 
+ static auto const col_rule=expr_rule_t{} = 
+   (lit("column") >> lit("(") >> digits >> lit(")") )[ ([](auto& ctx){ 
+       using boost::fusion::at_c;
+	 NOTRACE( std::cerr << "col_rule " << "\n"; )
+  	 NOTRACE( std::cout << "type(_val): " << qtl::type_name<decltype(_val(ctx))>() << "\n"; )
+         NOTRACE( std::cout << "type(_attr): " <<  qtl::type_name<decltype(_attr(ctx))>() << "\n"; )
+	 NOTRACE( std::cerr << _attr(ctx).size() << "\n"; )
+       std::string c;
+         NOTRACE( std::cout << "at_c<0>(_attr[0])=" << at_c<0>(_attr(ctx)[0]) << "\n"; )
+       for( auto x:_attr(ctx) ){
+         NOTRACE( std::cout << qtl::type_name<decltype(x)>()  << "\n"; )
+	 NOTRACE( std::cout << qtl::type_name<decltype(at_c<0>(x))>()  << "\n"; )
+	 NOTRACE( std::cout << at_c<0>(x) << "\n"; )
+         c.push_back(at_c<0>(x));
+       }
+         _val(ctx)=qtl::expr(op::column,c);
+	 NOTRACE( std::cerr << "_val=" << _val(ctx) << "\n"; )
+   }) ];
+
  static auto const id_rule=expr_rule_t{} = 
    //   (name_rule >> -( lit("(") >>  expr_rule  /* >> (expr_rule % lit(",")) */ >> lit(")") ) )[ ([](auto& ctx){ 
      (name_rule >> -( lit("(") >  list_rule >  lit(")") ) )[ ([](auto& ctx){ 
@@ -236,7 +255,7 @@ static auto const num_rule=x3::rule<struct num_rule, qtl::expr>{} =
 #if 1
  static auto const atom_rule=
    expr_rule_t{}=
-(lit_rule | id_rule | '(' > expr_rule > ')')
+(col_rule | lit_rule | id_rule | '(' > expr_rule > ')')
 #if 0
   [ ([](auto& ctx){
 	 NOTRACE( std::cerr << "atom_rule " << __LINE__ << "\n"; )
