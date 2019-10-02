@@ -37,11 +37,11 @@ Rows in the database are tuples of values that can be strings or scalars that ar
 Nodes in the database are tuples of intervals of values
 
 Using interval arithmetic and 3 valued logic, an arbitrary predicate can be evaluated on a node
-to determine wheter the node, and the values in the node do/don't/maybe satisfy the predicate.
+to determine whether the node, and the values in the node do/don't/maybe satisfy the predicate.
 When a node doesn't satisfy the predicate, it can be skipped.
 When a node does satisfy the predicate, no further tests need be done on values within the node,
-todo: in the case of aggregate queries (sum, avg, variance, standard deviation...)
-  a cached value can be returned immediately without need  to descend within the node to find the individual values.
+todo: in the case of aggregate queries (count, sum, avg, variance, standard deviation, max, min, median, ...)
+  a cached value can be returned immediately without need to descend within the node to find the individual values.
 When values within a node may satisfy the predicate, it can be descended to find nodes with narrower intervals,
 until the predicate can be reduced to True or False
 
@@ -55,7 +55,7 @@ e.g. the equivalent of
   INSERT INTO table_name VALUES 'Column 1', 'Column 2', 'string value', 'then some numbers', 1, 2, 3.14159, 'then another string';
 might be
   map[{"table_name"_s}] = {"Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "then another string"_s};
-but using column 0 as a table name is just a convention that the user may want to adopt (say, when implementing an sql database)
+but using column 0 as a table name is just a convention that the user may choose to adopt (say, when implementing an sql database)
 our class doesn't care, so the above insert would also have been equivalent to
   map[{}] = {"table_name"_s, "Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "then another string"_s};
 or
@@ -65,25 +65,27 @@ or
 the value could be deleted with
   map[{"table_name"_s,"Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "then another string"_s}] = nullptr;
 the index could also be an arbitrary predicate, so
-  SELECT * FROM table_name WHERE column(5) + column(6) < column(7) and 'then' <= column(8);
+  SELECT * FROM table_name WHERE 'then' <= column(4) and column(5) + column(6) < column(7);
 might be written as
-  for( auto row:map[{"table_name"_s][ 5_column + 6_column < 7_column && "then"_s <= 8_column] ){
+  for( auto row:map[{"table_name"_s}][ "then"_s <= 4_column && 5_column + 6_column < 7_column ] ){
     std::cout << row << std::endl; // but unlike the sql query, this print statement would include table_name as column(0)
   }
 
 Expressions can be bound to a symbol table to resove names
 given
   std::map<std::string,qtl::expr>symtab={
-    {"five"_s,5_column},
-    {"six"_s,6_column},
-    {"seven"_s,7_column},
-    {"eight"_s,8_column},
-    {"const"_s,"then"_s},
+    {"const"s,         "then"_s},
+    {"four"s,          4_column},
+    {"five"s,          5_column},
+    {"six"s,           6_column},
+    {"five_plus_six"s, "five"_name + "six"_name}
+    {"seven"s,         7_column},
   };
 one could write
-  ("five"_name + "six"_name < "seven"_name  && "const"_name <= "eight"_name).bind(symtab)
+  ( "const"_name <= "four"_name && "five_plus_six" < "seven"_name ).bind(symtab)
 for
-  5_column + 6_column < 7_column && "then"_s <= 8_column 
+  "then"_s <= 4_column && 5_column + 6_column < 7_column
+
 
 notation
 The user defined suffix qtl::literals::operator""_s, can be used to create qtl::string literals,
@@ -95,18 +97,25 @@ analogous to to 123l or 123f
 
 the interval {x : a < x <= b} can be written as
   a < x::x <= b
-the unbounded interval  {x : a <= x} can be written as
+the right-unbounded interval  {x : a <= x} can be written as
   a <= x::x
-the unbounded interval {x : x < b} can be written as
+the left-unbounded interval {x : x < b} can be written as
   x::x < b
-The point interval {x : a <= x <= a} can also be written as
+note: when a < b, (a <= x::x && x::x < b) is the same as (a <= x::x < b)
+
+The point interval {x : a <= x <= a} or {x : x == a} can also be written as
   x::x==a
+or as
+  x::x[a]
 or just 
   a
 when it is clear by context that an interval is being used
-The interval {x : x <= a || b < x } i.e. the complement of {x : a < x <= b} can be written as
+
+The projectively wrapped interval {x : x <= a || b < x } i.e. the complement of {x : a < x <= b} can be written as
   x::x <= a || b < x::x 
-(those are also recognized by the test SQL parser)
+
+(the above interval notations are also recognized by the test SQL parser)
+
 In C++ only, a boundary <a can be written as 
   x::x | a
 or as
@@ -118,4 +127,8 @@ or as
 
 if lower and upper are boundaries, the interval between them can also be written as
   (lower,upper)
+so (a | x::x, x::x | b) and (a++, --b) and (a < x::x < b) are equivalent
+also (x::x | a, a | x::x) and (--a, a++) and (a <= x::x <= a) and ( x::x==a ) and (x::x[a]) are equivalent
+
+
 
