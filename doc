@@ -32,7 +32,6 @@ Logical operators on True/False/Maybe use a 3 valued logic system.
 todo: verify that interval<object> works on arbitrary totally ordered objects, not just qtl::string and qtl::scalar
 and that interval arithmetic works on any ordered field.
 
-
 Rows in the database are tuples of values that can be strings or scalars that are stored in strings.
 Nodes in the database are tuples of intervals of values
 
@@ -55,6 +54,7 @@ e.g. the equivalent of
   INSERT INTO table_name VALUES 'Column 1', 'Column 2', 'string value', 'then some numbers', 1, 2, 3.14159, 'then another string';
 might be
   map[{"table_name"_s}] = {"Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "then another string"_s};
+
 but using column 0 as a table name is just a convention that the user may choose to adopt (say, when implementing an sql database)
 our class doesn't care, so the above insert would also have been equivalent to
   map[{}] = {"table_name"_s, "Column 1"_s, "Column 2"_s, "string value"_s, "then some numbers"_s, 1, 2, 3.14159, "then another string"_s};
