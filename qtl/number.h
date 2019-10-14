@@ -675,6 +675,7 @@ TABLE_CMP
       // os << boost::core::demangle(typeid(*this).name()) << "{ e=" << e << ", i=" << i << ", s=" << N(s) << ", a="<< a << ", b=" << b << "}";
       return s.write(os);
     }    
+    #undef N
   }; // end class p
   inline static const std::vector<p> schema={
     p(-6176,0,5,18,          0,"\x81\x02\x01\x01\01"),
