@@ -57,10 +57,10 @@ expr.test.out: qtl/tree.h qtl/interval.h qtl/number.h
 canonical.out: canonical.cpp
 
 %.out: %.cpp
-	$(CXX) $(CXXFLAGS) -v -o $@ -g $<
+	$(CXX) $(CXXFLAGS) -v -o $@ -g3 $<
 
 %.test.out: qtl/%.h qtl/out.h qtl/string.h
-	( $(CXX) $(CXXFLAGS) -v -o $@ -g  -DTEST_H='"'$<'"' -fsanitize=address -fdiagnostics-color=always test.cpp 2>&1 && cp -av $? compiles  ) | tee ./$(*F).make.$(subst /,_,$(firstword ${CXX})).log
+	( $(CXX) $(CXXFLAGS) -v -o $@ -g3  -DTEST_H='"'$<'"' -fsanitize=address -fdiagnostics-color=always test.cpp 2>&1 && cp -av $? compiles  ) | tee ./$(*F).make.$(subst /,_,$(firstword ${CXX})).log
 
 %.test.out: qtl/%.hpp
 	$(CXX) -o $@ $(CXXFLAGS) -DTEST_H='"'$<'"'  -fsanitize=address test.cpp  
