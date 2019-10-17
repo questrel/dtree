@@ -30,6 +30,7 @@ iterator<depth> // iterates over depth level elements
 qtl/number.h
 ```c++
 qtl::number // contains any std::is_arithmetic type, stored in qtl::string with strcmp ordering
+```
 
 qtl/bool.h
 ```c++
@@ -95,7 +96,6 @@ for( auto x::lvalue ){ qtl::cout << x; } // print values satisfying query
 qtl/sql.h
 ```c++
 // toy sql parser turning simple sql queries into qtl::store[] queries
-
 ```
 
 qtl/randstream.h
