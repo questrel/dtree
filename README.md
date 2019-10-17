@@ -51,7 +51,7 @@ qtl/interval.h
 ```c++
 qtl::interval // interval arithmetic with trinary logic comparisons
 // intervals may contain projective infinity
-// (this allows sensible division of intervals containing 0,
+// (this allows sensible division by intervals containing 0,
 // and also allows taking the complement of an interval)
 ```
 
