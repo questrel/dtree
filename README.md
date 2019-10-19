@@ -2,7 +2,7 @@
 
 Library is header-only\
 depends on boost::spirit::X3 and boost::multiprecision::cpp_dec_float\
-(boost::core::demangle being deprecated in favor of __PRETTY_FUNCTION__)\
+(dependence on boost::core::demangle being deprecated in favor of __PRETTY_FUNCTION__)\
 requires --std=c++17
 
 qtl/out.h
