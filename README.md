@@ -13,14 +13,14 @@ qtl::ostream&opertor<<(container<object>& o) // invokes qtl::ostream << object
 
 qtl/string.h
 ```c++
-qtl::string // like std::string_view, can contain std::vector<std::string>, maintaining strcmp ordering
+qtl::string // like std::string_view, can contain std::vector<std::string>, maintaining memcmp ordering
 ```
 
 qtl/container.h
 ```c++
 template<typename T> qtl::vector<T>;
 template<typename T...> qtl::tuple<T...>;
-// stored in qtl::string such that strcmp ordering is equivalent to lexical std::vector or std::tuple ordering
+// stored in qtl::string such that memcmp ordering is equivalent to lexical std::vector or std::tuple ordering
 qtl::scalar::depth = 0;
 qtl::vector<T>::depth = T::depth-1;
 qtl::tuple<T..>::depth = std::min<T::depth...>-1;
@@ -29,7 +29,7 @@ iterator<depth> // iterates over depth level elements
 
 qtl/number.h
 ```c++
-qtl::number // contains any std::is_arithmetic type, stored in qtl::string with strcmp ordering
+qtl::number // contains any std::is_arithmetic type, stored in qtl::string with memcmp ordering
 ```
 
 qtl/bool.h
@@ -91,6 +91,15 @@ lval operator[](std::vector<scalar>) // query on prefix
 friend operator=(lval,std::vector<scalar>) // store value
 friend operator=(lval,std::nullptr_t) // delete value
 for( auto x::lvalue ){ qtl::cout << x; } // print values satisfying query
+/* todo:
+  lval operator[]( project subset of columns );
+  allows unified map< variant< prefix, expression, projection >, vector<column selection> > abstraction
+  and makes for( auto x::lvalue ){ qtl::cout << x; } more practical when you only want specific columns
+  also makes lvalue = vector<value> and lvalue = vector<vector<value>> more useful
+  possible implementation:
+  extend lval operator[](std::vector<scalar>) // query on prefix
+  to lval operator[](std::vector<interval>) // where the (--0,--0), the False or Empty interval, means to ignore that column
+*/
 ```
 
 qtl/sql.h
