@@ -26,6 +26,7 @@ qtl::scalar::depth = 0;
 qtl::vector<T>::depth = T::depth-1;
 qtl::tuple<T..>::depth = std::min<T::depth...>-1;
 iterator<depth> // iterates over depth level elements
+// Erin, why is there an orange bar under here?
 ```
 
 qtl/number.h
