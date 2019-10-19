@@ -29,7 +29,7 @@ iterator<depth> // iterates over depth level elements
 
 qtl/number.h
 ```c++
-qtl::number // contains any std::is_arithmetic type, stored in qtl::string with memcmp ordering
+qtl::number // contains any std::is_arithmetic type or decfloat, stored in qtl::string with memcmp ordering
 ```
 
 qtl/bool.h
