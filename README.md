@@ -1,7 +1,7 @@
 # dtree
 
 Library is header-only\
-depends on boost::spirit::X3\
+depends on boost::spirit::X3 and boost::multiprecision::cpp_dec_float\
 requires --std=c++17
 
 qtl/out.h
