@@ -7,7 +7,7 @@ requires --std=c++17
 qtl/out.h
 ```c++
 //templates to print std::container<printable object>
-qtl::ostream&opertor<<(container<object>& o) // invokes qtl::ostream << object
+qtl::ostream& operator<<(container<object>& o) // invokes qtl::ostream << object
 // todo: smart formating of nested containers
 ```
 
