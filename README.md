@@ -1,7 +1,7 @@
 # dtree
 
-Library is header-only
-depends on boost::spirit::X3
+Library is header-only\
+depends on boost::spirit::X3\
 requires --std=c++17
 
 qtl/out.h
