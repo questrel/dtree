@@ -120,6 +120,13 @@ qtl/randstream.h
 // used internally to turn random afl-fuzz input into nicely distributed tests
 ```
 
+test.cpp
+```c++
+// invokes qtl/module.h to generate a test exercizer for module
+//#define TEST_H "qtl/module.h"
+#include TEST_H
+```
+
 ## Installation Instructions
 
 compiling
