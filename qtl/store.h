@@ -2284,7 +2284,7 @@ template<typename R>
      //     std::stringbuf sb;
      //     std::basic_streambuf<char> sb;
      // i>>sb;
-     i.seekg(0,std::ios_base::seekdir::end);
+     i.seekg(0,std::ios_base::end);
      //i.seekg(0,std::istringstream::end);
      auto size=i.tellg();
      if( size<=0 ){
@@ -2292,7 +2292,7 @@ template<typename R>
        return;
      }
      std::string s1(size,'\0');
-     i.seekg(0,std::ios_base::seekdir::beg);
+     i.seekg(0,std::ios_base::beg);
      //i.seekg(0,std::istrstream::beg);
 
      i.read(s1.data(),size);
