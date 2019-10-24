@@ -8,7 +8,8 @@ requires --std=c++17
 qtl/out.h
 ```c++
 //templates to print std::container<printable object>
-qtl::ostream& operator<<(container<object>& o) // invokes qtl::ostream << object
+qtl::ostream& operator<<(const &object&) // invokes std::stream << object or object.write(qtl::ostream&)
+qtl::ostream& operator<<(const container<object>& o) // invokes qtl::ostream << object
 // todo: smart formating of nested containers
 ```
 
@@ -44,8 +45,8 @@ qtl/bounds.h
 qtl::bounds<T> 
 // T is a scalar type suporting <=>, can be number or string
 T value;
---value or (x::x|value) // boundary between x::x < value and value <= x::x
-value++ or (value|x::x) // boundary between x::x <= value and value < x::x  
+--value or (x::x|value) // boundary below value. i.e. between x::x < value and value <= x::x
+value++ or (value|x::x) // boundary above value. i.e. between x::x <= value and value < x::x  
 // --"" is the projective infinity
 ```
 
@@ -66,8 +67,12 @@ using qtl::expr=optree<interval,vector<interval>>;
 op(+) op(-) op(*) op(/) op(<) op(<=) op (==) op(!=) op(>=) op(>) op(&&) op(||)
 #undef op
 e.eval() -> interval // evaluate expression 
-e.bind(std::map<string,expr>).eval() -> interval // evaluate with variables bound to values
+e.bind(std::map<string,expr>).eval() -> interval // evaluate with named variables bound to values
 e.stringify() -> std::string  // human readable expression
+e.recurse<function>(Args) // descend tree, recursively performing function
+    //  e.recurse<&decltype(e)::eval>() is equivalent to e.eval() 
+    //  e.recurse<&decltype(e)::ps>(&decltype(e)::stringify) is equivalent to e.stringify()
+// todo???: can store.h be defined as an instantiation of optree?  store.recurse<find>(predicate)? 
 ```
 
 qtl/operators.h
@@ -86,7 +91,7 @@ auto p=boost:spirit::x3::phrase_parse( string.begin(),string.end(), qtl::expr_ru
 qtl/store.h
 ```c++
 // use interval arithmetic and trinary logic to query a database
-lval operator[](qtl::expr) // query on expression
+lval operator[](qtl::expr) // query on expression predicate
 lval operator[](std::vector<scalar>) // query on prefix
 operator=(lval,std::vector<scalar>) // store value
 operator=(lval,std::nullptr_t) // delete value
