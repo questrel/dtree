@@ -62,11 +62,9 @@ qtl/tree.h
 // expression trees 
 qtl::optree(operator,vector<operands>)
 using qtl::expr=optree<interval,vector<interval>>;
-qtl::expr operator+(qtl::expr left, qtl::expr right);
-qtl::expr operator-(qtl::expr left, qtl::expr right);
-qtl::expr operator*(qtl::expr left, qtl::expr right);
-qtl::expr operator/(qtl::expr left, qtl::expr right);
-qtl::expr e;
+#define op(o) qtl::expr operator o(const qtl::expr &left, const qtl::expr &right);
+op(+) op(-) op(*) op(/) op(<) op(<=) op (==) op(!=) op(>=) op(>) op(&&) op(||)
+#undef op
 e.eval() -> interval // evaluate expression 
 e.bind(std::map<string,expr>).eval() -> interval // evaluate with variables bound to values
 e.stringify() -> std::string  // human readable expression
@@ -90,8 +88,8 @@ qtl/store.h
 // use interval arithmetic and trinary logic to query a database
 lval operator[](qtl::expr) // query on expression
 lval operator[](std::vector<scalar>) // query on prefix
-friend operator=(lval,std::vector<scalar>) // store value
-friend operator=(lval,std::nullptr_t) // delete value
+operator=(lval,std::vector<scalar>) // store value
+operator=(lval,std::nullptr_t) // delete value
 for( auto x::lvalue ){ qtl::cout << x; } // print values satisfying query
 /* todo:
   lval operator[]( project subset of columns );
