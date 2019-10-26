@@ -62,7 +62,7 @@ value++ or (value|x::x) // boundary above value. i.e. between (x::x<=value) and 
 //       also, \U22A5 ( ⊥ )  should be a synonym for ∞*0 or (∞<x::x<∞)
 //   (I can overload x::x[0]/x::x[0] to return (∞<x::x<∞)
 //    but it's harder to overide the interpretation of 0l/0l in C++)
-``
+```
 
 qtl/interval.h
 ```c++
