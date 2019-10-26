@@ -56,7 +56,7 @@ value++ or (value|x::x) // boundary above value. i.e. between x::x <= value and 
 // --"" is the projective infinity
 // note: projective infinity violates transitivity, since
 // --"" < declval<T>() and declval<T>() < --"" are both true
-// this is ok, since !std::is_same<T,decltype(--"")>, but caution in corner cases is advised 
+// this is ok, since --"" is not part of T (!std::is_same<T,decltype(--"")>) but caution in corner cases is advised 
 ```
 
 qtl/interval.h
