@@ -3,7 +3,7 @@ draft documentation outline
 qtl = QuesTreL Template Library
 
 A qtl::container object is analogous to a std::container object
-where container is a string or scalar or tuple<container,container,...> or vector<container>
+where container is a string or scalar or tuple<container...> or vector<container>
 The only methods that have been implemented are the ones that we needed for this project
 generally, conversion to/from the correspoinding std::container, read only forward iterators, and push_back
 todo: add more std::methods to support other uses
@@ -11,7 +11,7 @@ All containers are stored as strings, and are comparable with memcmp
 scalars can contain long or double or decfloat.
 todo: full support for decfloat arithmetic
 scalars take up as much space as needed for the required precision,
-but try to be compact for values that could fit in char/short/half float
+but try to be compact for values that could be represented in small types (char/short/half float)
 arithmetic and comparison operators don't care about the type of object they operate on,
 but are not expected to give sensible results if you do arithmetic on strings 
 or comparisons between scalars and strings
@@ -47,7 +47,7 @@ until the predicate can be reduced to True or False
 
 todo: compress common prefix of boundaries of an interval
 todo: compress common prefix of boundary partitions within a node
-todo: support this with a general shared prefix for qtl::string objects
+todo: support the above with a general shared prefix for qtl::string objects
 
 todo: class ranges:public std::variant<interval,std::vector<ranges>>{}
       to support values that represent nested containers,
@@ -115,7 +115,7 @@ or as
   x::x[a]
 or just 
   a
-when it is clear by context that an interval is being used
+when context makes it clear that an interval is being used
 
 The projectively wrapped interval {x : x <= a || b < x } i.e. the complement of {x : a < x <= b} can be written as
   x::x <= a || b < x::x 
@@ -135,6 +135,3 @@ if lower and upper are boundaries, the interval between them can also be written
   (lower,upper)
 so (a | x::x, x::x | b) and (a++, --b) and (a < x::x < b) are equivalent
 also (x::x | a, a | x::x) and (--a, a++) and (a <= x::x <= a) and ( x::x==a ) and (x::x[a]) are equivalent
-
-
-

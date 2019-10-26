@@ -25,7 +25,7 @@ qtl/container.h
 ```c++
 template<typename T> qtl::vector<T>;
 template<typename T...> qtl::tuple<T...>;
-// stored in qtl::string such that memcmp ordering is equivalent to lexical std::vector or std::tuple ordering
+// stored in qtl::string such that memcmp ordering is equivalent to std::lexicographical_compare
 qtl::scalar::depth = 0;
 qtl::vector<T>::depth = T::depth-1;
 qtl::tuple<T..>::depth = std::min<T::depth...>-1;
@@ -38,7 +38,7 @@ Would best practice be to keep lines short enough to not scroll?
 qtl/number.h
 ```c++
 qtl::number // contains any std::is_arithmetic type or decfloat, stored in qtl::string with memcmp ordering
-// todo: figure out library path to make <charconv>  work 
+// todo: figure out library path to make <charconv> work 
 ```
 
 qtl/bool.h
