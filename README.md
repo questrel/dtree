@@ -43,7 +43,8 @@ qtl::number // contains std::is_arithmetic types or decfloat, stored in qtl::str
 
 qtl/bool.h
 ```c++
-qtl::kleen/*e*/ // True/False/Maybe logic
+qtl::kleen/*e*/ // True/False/Maybe logic ( https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics )
+// "e" is dropped from (Stephen) Kleene, as "e" is dropped from (George) Boole 
 ```
 
 qtl/bounds.h
@@ -69,6 +70,7 @@ qtl::interval // interval arithmetic, with trinary logic comparisons
 // intervals may contain the projective infinity
 // (this allows sensible division by intervals containing 0,
 // and also allows taking the complement of an interval)
+
 // note: std::partial_ordering is inadequate to express <=> for intervals,
 // since we could know that a < b is false, but not know whether a==b or a>b
 // or know that a==b is false but not know whether a<b or a>b
@@ -94,7 +96,7 @@ qtl/tree.h
 // expression trees 
 qtl::optree(operator,vector<operands>)
 using qtl::expr=optree<interval,vector<interval>>;
-#define op(O) qtl::expr operator O(const qtl::expr &left, const qtl::expr &right);
+#define op(O) qtl::expr operator O(const qtl::expr& left, const qtl::expr& right);
 op(+) op(-) op(*) op(/) op(<) op(<=) op (==) op(!=) op(>=) op(>) op(&&) op(||) ...
 #undef op
 e.eval() -> interval // evaluate expression 
@@ -146,7 +148,7 @@ qtl/sql.h
 // toy sql parser turning simple sql queries into qtl::store[] queries
 #if 0
 Erin, I'm not sure there's much point in documenting the behavior if this module,
-Which is basically as much of SQL as one cares to implement, since abundant SQL doccumentation already exists.
+which is basically as much of SQL as one cares to implement, since abundant SQL doccumentation already exists.
 Rather, I think we want to explain the underlying model well enough
 so that users can understand how to implement whatever SQL or other behavior they may be interested in.
 
@@ -177,12 +179,16 @@ but not a specification that would require map[key].size() to return 0 or 1
 #endif
 ```
 
-
 qtl/randstream.h
 ```c++
 // turn stream of random values from one arbitrary distribution
 // into stream of random values from another arbitrary distriburion
-// uses Arithmetic Coding for optimal entropy buffering
+// uses Arithmetic Coding ( https://en.wikipedia.org/wiki/Arithmetic_coding ) for optimal entropy buffering
+#if 0/*
+This is essentially the application for which I had originally invented Arithmetic Coding,
+a year before it appeared in a widely circulated journal article https://dl.acm.org/citation.cfm?doid=214762.214771
+in which I leared that it had been previously invented a decade earlier.
+*/#endif
 // used internally to turn random afl-fuzz input into nicely distributed tests
 ```
 
