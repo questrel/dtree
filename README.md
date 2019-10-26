@@ -126,7 +126,39 @@ for( auto x::lvalue ){ qtl::cout << x; } // print values satisfying query
 qtl/sql.h
 ```c++
 // toy sql parser turning simple sql queries into qtl::store[] queries
+#if 0
+Erin, I'm not sure there's much point in documenting the behavior if this module,
+Which is basically as much of SQL as one cares to implement, since abundant SQL doccumentation already exists.
+Rather, I think we want to explain the underlying model well enough
+so that users can understand how to implement whatever SQL or other behavior they may be interested in.
+
+The basic abstraction I want to present is like 
+  std::map<selector,selection>
+where selection is a vector (rows) of vectors (columns) of values,
+amd selection can be an arbitrary predicate to be satisfied by the values within the selected rows,
+or a restriction to columns with particular values or to a particular subset of columns.
+You would be able to retrieve a selection with
+  selection = map[selector];
+or insert new selections with
+  map[selector] = selection;
+also
+  selection = selecton[selector];
+could be used to refine a selection.
+(so the initial map in map[selection] can be thought of as a selection with a universal selector)
+
+This may seem like a stretch of the std::map concept, and unlike the usual map because the result of
+  map[selector]
+can be changed by
+  map[different_selector] = selection;
+But I'm not seeing a guarantee in the c++ documentation that std::map values must be independent for different keys
+Or, it may be conceptually better to think of the selection returned by map[selector] as a pointer to the actual selection
+Especially when shared memory is implemented and different users can influence each others results.
+
+I do see a specification that says std::map.count(key) returns 0 or 1
+but not a specification that would require map[key].size() to return 0 or 1
+#endif
 ```
+
 
 qtl/randstream.h
 ```c++
