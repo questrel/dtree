@@ -3,7 +3,7 @@ draft documentation outline
 qtl = QuesTreL Template Library
 
 A qtl::container object is analogous to a std::container object
-where container is a string or scalar or tuple<container...> or vector<container>
+where container is a string or scalar or vector<container> or tuple<container...>
 The only methods that have been implemented are the ones that we needed for this project
 generally, conversion to/from the correspoinding std::container, read only forward iterators, and push_back
 todo: add more std::methods to support other uses
@@ -101,7 +101,8 @@ or qtl::scalar literals
   123_s
 analogous to to 123l or 123f
 
-the interval {x : a < x <= b} can be written as
+the interval {x : a < x <= b} ( x such that x is greater than a and less than or equal to b)
+can be written as
   a < x::x <= b
 the right-unbounded interval  {x : a <= x} can be written as
   a <= x::x
@@ -109,7 +110,7 @@ the left-unbounded interval {x : x < b} can be written as
   x::x < b
 note: when a < b, (a <= x::x && x::x < b) is the same as (a <= x::x < b)
 
-The point interval {x : a <= x <= a} or {x : x == a} can also be written as
+The interval containing the single point a {x : a <= x <= a} or {x : x == a} can also be written as
   x::x==a
 or as
   x::x[a]

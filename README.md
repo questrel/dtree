@@ -10,15 +10,15 @@ todo: get g++ working again
 qtl/out.h
 ```c++
 //templates to print std::container<printable elements>
-qtl::ostream& operator<<(const &object&) // invokes std::stream << object or object.write(qtl::ostream&)
 qtl::ostream& operator<<(const container<object>& o) // invokes qtl::ostream << object
 qtl::ostream& operator<<(const tuple<object...>& o) //  invokes qtl::ostream << object...
+qtl::ostream& operator<<(const &object&) // invokes std::stream << object or object.write(qtl::ostream&)
 // todo: smart formating of nested containers
 ```
 
 qtl/string.h
 ```c++
-qtl::string // like std::string_view, can contain std::vector<std::string>, maintaining memcmp ordering
+qtl::string // like std::string_view, can contain std::string or std::vector<std::string>, maintaining memcmp ordering
 ```
 
 qtl/container.h
@@ -37,8 +37,8 @@ Would best practice be to keep lines short enough to not scroll?
 
 qtl/number.h
 ```c++
-qtl::number // contains any std::is_arithmetic type or decfloat, stored in qtl::string with memcmp ordering
-// todo: figure out library path to make <charconv> work 
+qtl::number // contains std::is_arithmetic types or decfloat, stored in qtl::string with memcmp ordering
+// todo: figure out library path to get <charconv> working 
 ```
 
 qtl/bool.h
@@ -48,27 +48,45 @@ qtl::kleen/*e*/ // True/False/Maybe logic
 
 qtl/bounds.h
 ```c++
-qtl::bounds<T> 
+template<typename T> qtl::bounds<T> 
 // T is a scalar type suporting <=>, can be number or string
 T value;
---value or (x::x|value) // boundary below value. i.e. between x::x < value and value <= x::x
-value++ or (value|x::x) // boundary above value. i.e. between x::x <= value and value < x::x  
-// --"" is the projective infinity
-// note: projective infinity violates transitivity, since
+--value or (x::x|value) // boundary below value. i.e. between (x::x<value) and (value<=x::x)
+value++ or (value|x::x) // boundary above value. i.e. between (x::x<=value) and (value<x::x)  
+// --"" is the projective infinity ( https://en.wikipedia.org/wiki/Point_at_infinity )
+// note: the projective infinity violates transitivity, since
 // --"" < declval<T>() and declval<T>() < --"" are both true
-// this is ok, since --"" is not part of T (!std::is_same<T,decltype(--"")>) but caution in corner cases is advised 
-```
+// that's ok, since --"" is not part of T (!std::is_same<T,decltype(--"")>) but caution in corner cases is advisable 
+// todo: \U221E ( ∞ ) and x::x/0 should be synonyms for --""
+//       also, \U22A5 ( ⊥ )  should be a synonym for ∞*0 or (∞<x::x<∞)
+//   (I can overload x::x[0]/x::x[0] to return (∞<x::x<∞)
+//    but it's harder to overide the interpretation of 0l/0l in C++)
+``
 
 qtl/interval.h
 ```c++
-qtl::interval // interval arithmetic with trinary logic comparisons
-// intervals may contain projective infinity
+qtl::interval // interval arithmetic, with trinary logic comparisons
+// intervals may contain the projective infinity
 // (this allows sensible division by intervals containing 0,
 // and also allows taking the complement of an interval)
 // note: std::partial_ordering is inadequate to express <=> for intervals,
 // since we could know that a < b is false, but not know whether a==b or a>b
 // or know that a==b is false but not know whether a<b or a>b
 // todo: implement qtl::partial_ordering for c++20
+
+// The interval from projective infinity to projective infinity (∞<x::x<∞)
+// represents a value that could be anything.
+// It is also the interval representation of the kleen::True value.
+// The kleen::False value is represented by (0<=x::x<0), the interval between (x::x|0) and (x::x|0),
+// which is an interval that contains no values.
+// kleen::Maybe is represented by the interval (0<=x::x<=1)
+// so the && and || operations on intervals have the natural interpretation for True/False/Maybe values.
+// This may be counter intuitive if one was expecting x::x[0] to represent False and x::x[1] to represent True,
+// (0<=x::x<=1) for Maybe does fit that convention, but that could be confusing because
+// operator !/*not*/(0<=x::x<=1), unfortunately doesn't bridge intervals and kleens quite as well
+// so we need to distinguish it from operator ~/*complement*/(0<=x::x<=1).  
+// (∞<x::x<∞) could also be described as a completely unknown value, so it could be
+// semantically confusing that Unknown is also True.
 ```
 
 qtl/tree.h
@@ -76,8 +94,8 @@ qtl/tree.h
 // expression trees 
 qtl::optree(operator,vector<operands>)
 using qtl::expr=optree<interval,vector<interval>>;
-#define op(o) qtl::expr operator o(const qtl::expr &left, const qtl::expr &right);
-op(+) op(-) op(*) op(/) op(<) op(<=) op (==) op(!=) op(>=) op(>) op(&&) op(||)
+#define op(O) qtl::expr operator O(const qtl::expr &left, const qtl::expr &right);
+op(+) op(-) op(*) op(/) op(<) op(<=) op (==) op(!=) op(>=) op(>) op(&&) op(||) ...
 #undef op
 e.eval() -> interval // evaluate expression 
 e.bind(std::map<string,expr>).eval() -> interval // evaluate with named variables bound to values
@@ -92,7 +110,7 @@ e.recurse<function>(Args) // descend tree, recursively performing function on ea
 
 qtl/operators.h
 ```c++
-// table of operators and precedences used by tree.h
+// table of operators and precedence hierarchy used by tree.h
 ```
 
 qtl/expr.h
