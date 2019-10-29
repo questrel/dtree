@@ -30,9 +30,11 @@ qtl::scalar::depth = 0;
 qtl::vector<T>::depth = T::depth-1;
 qtl::tuple<T..>::depth = std::min<T::depth...>-1;
 iterator<depth> // iterates over depth level elements
+#if 0
 // Erin, why is there an orange bar under here?
 Oh, I see, it's a scroll bar.  I thought it was like a <hr> separator.
 Would best practice be to keep lines short enough to not scroll?
+#endif
 ```
 
 qtl/number.h
@@ -184,11 +186,11 @@ qtl/randstream.h
 // turn stream of random values from one arbitrary distribution
 // into stream of random values from another arbitrary distriburion
 // uses Arithmetic Coding ( https://en.wikipedia.org/wiki/Arithmetic_coding ) for optimal entropy buffering
-#if 0/*
+#if 0
 This is essentially the application for which I had originally invented Arithmetic Coding,
 a year before it appeared in a widely circulated journal article https://dl.acm.org/citation.cfm?doid=214762.214771
 in which I leared that it had been previously invented a decade earlier.
-*/#endif
+#endif
 // used internally to turn random afl-fuzz input into nicely distributed tests
 ```
 

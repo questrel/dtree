@@ -56,7 +56,7 @@ todo: class ranges:public std::variant<interval,std::vector<ranges>>{}
       so maybe we just need a notation for binding varibles to container elements
       
 nodes are internal implementation details not normally visible to the c++ user
-the interface to the user looks more like a map with a flexible index
+the interface to the user looks more like a map with a generalized index
 e.g. the equivalent of
   INSERT INTO table_name VALUES 'Column 1', 'Column 2', 'string value', 'then some numbers', 1, 2, 3.14159, 'then another string';
 might be
@@ -78,7 +78,7 @@ might be written as
   }
 
 Expressions can be bound to a symbol table to resove names
-given
+e.g. given
   std::map<std::string,qtl::expr>symtab={
     {"const"s,         "then"_s},
     {"four"s,          4_column},
@@ -93,7 +93,7 @@ for
   "then"_s <= 4_column && 5_column + 6_column < 7_column
 
 
-notation
+notation:
 The user defined suffix qtl::literals::operator""_s, can be used to create qtl::string literals,
   "string"_s
 analogous to std::literals::string_literals::operator""s 
@@ -101,7 +101,7 @@ or qtl::scalar literals
   123_s
 analogous to to 123l or 123f
 
-the interval {x : a < x <= b} ( x such that x is greater than a and less than or equal to b)
+the interval {x : a < x <= b} (x such that x is greater than a and less than or equal to b)
 can be written as
   a < x::x <= b
 the right-unbounded interval  {x : a <= x} can be written as
@@ -134,5 +134,33 @@ or as
 
 if lower and upper are boundaries, the interval between them can also be written as
   (lower,upper)
-so (a | x::x, x::x | b) and (a++, --b) and (a < x::x < b) are equivalent
-also (x::x | a, a | x::x) and (--a, a++) and (a <= x::x <= a) and ( x::x==a ) and (x::x[a]) are equivalent
+so (a|x::x, x::x|b) and (a++, --b) and (a < x::x < b) are equivalent
+also, (x::x|a, a|x::x) and (--a, a++) and (a <= x::x <= a) and (x::x==a) and (x::x[a]) are equivalent
+
+x::x is a magic variable with a magic type that allows us to appropriately overload operators
+(x::x<a) is meant to suggest the { x : x < a } "x such that x is less than a" set notation 
+
+(a < x::x < b) is the same as (a<x::x) && (x::x<b)
+which means that (a<x::x) is actually another magic type with an implicit conversion to qtl::interval 
+(a<x::x<b) is not the same as (a<x::x) < (b<=x::x<=b)
+even though in other contexts b might be implicitly converted to (b<=x::x<=b)
+
+(x::x|a) and (a|x::x) boundaries are meant to suggest Dedekind cuts or Surreal Numbers
+
+The analogies seem familar to me having, been woking on them for a while,
+but may not be as helpful to someone unfamilar with the borrowed concepts,
+to whom it may seem like giberish, or to someone familar with the borrowed concepts,
+to whom the way I twist the standard concepts may be confusing.
+
+Chris also had an explaination of boundaries in terms of infinitesimals,
+(so maybe I should also define a qtl::epsilon, and overload 
+boundary operator+(scalar,epsilon)
+boundary operator-(scalar,epsilon)
+for constructing boundaries)
+
+Since different ways of representing boundaries or intervals may seem more or less intuitive or systematic
+to different people, there are different output flags (analogous to std::ios_base::fmtflags)
+for selecting the way operator<< prints them to qtl::ostream, but my choices may not have
+been the ones easiest to explain (or the choiches I would have made if I were making them now)
+So some of the c++ interface hight want to change if there is a tweak that would make them
+more documentable for others.
