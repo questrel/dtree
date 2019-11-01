@@ -219,7 +219,7 @@ make CXX='clang++ -DDEBUG'  # with diagnostic trace prints
 ```
 
 ```bash
-make ???.fuzz.out  # afl-fuzz testing ( see http://lcamtuf.coredump.cx/afl/ )
+make ???.fuzz.out  # [afl-fuzz testing](http://lcamtuf.coredump.cx/afl/)
 AFL_NO_ARITH=1 AFL_EXIT_WHEN_DONE=1 /usr/local/bin/afl/afl-fuzz  -i- -x fuzz/???.dict -o fuzz/???.out -- ./???.fuzz.out
 # may run for several weeks
 ```
