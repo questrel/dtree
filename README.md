@@ -22,7 +22,8 @@ qtl::string // like std::string_view, can contain std::string or std::vector<std
 ```
 
 qtl/container.h
-```c++
+<!-- language: c++ > 
+``
 template<typename T> qtl::vector<T>;
 template<typename T...> qtl::tuple<T...>;
 // stored in qtl::string such that memcmp ordering is equivalent to std::lexicographical_compare
@@ -43,8 +44,8 @@ qtl::number // contains std::is_arithmetic types or decfloat, stored in qtl::str
 // todo: figure out library path to get <charconv> working 
 ```
 
-qtl/bool.h\
-```qtl::kleen/*e*/ // True/False/Maybe logic``` [en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics](https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics)\
+qtl/bool.h
+<!-- language: c++ > ``qtl::kleen/*e*/ // True/False/Maybe logic``` [en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics](https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics)\
 ```// "e" is dropped from (Stephen) Kleene, as "e" is dropped from (George) Boole ```
 
 qtl/bounds.h
