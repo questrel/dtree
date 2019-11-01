@@ -100,7 +100,7 @@ qtl::interval // interval arithmetic, with trinary logic comparisons
 qtl/tree.h
 ```c++
 // expression trees 
-qtl::optree(operator,vector<operands>)
+qtl::optree(Operator,vector<Operands>)
 using qtl::expr=optree<interval,vector<interval>>;
 #define op(O) qtl::expr operator O(const qtl::expr& left, const qtl::expr& right);
 op(+) op(-) op(*) op(/) op(<) op(<=) op (==) op(!=) op(>=) op(>) op(&&) op(||) ...
