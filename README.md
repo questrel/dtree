@@ -60,7 +60,8 @@ template<typename T> qtl::bounds<T>  // T is a scalar type suporting <=>, can be
 T value;
 --value or (x::x|value) // boundary below value. i.e. between (x::x<value) and (value<=x::x)
 value++ or (value|x::x) // boundary above value. i.e. between (x::x<=value) and (value<x::x)  
-// --"" is the projective infinity (<https://en.wikipedia.org/wiki/Point_at_infinity>)
+// --"" is the projective infinity (<https://en.wikipedia.org/wiki/Projectively_extended_real_line>)
+// note: *not* the affine infintities <https://en.wikipedia.org/wiki/Extended_real_number_line>
 // note: the projective infinity violates antisymmetry, since
 // --"" < declval<T>() and declval<T>() < --"" are both true
 // that's ok, since --"" is not part of T (!std::is_same<T,decltype(--"")>) but caution in corner cases is advisable 
@@ -70,7 +71,7 @@ value++ or (value|x::x) // boundary above value. i.e. between (x::x<=value) and 
 qtl/interval.h
 ```c++
 qtl::interval // interval arithmetic, with trinary logic comparisons
-// intervals may contain the projective infinity
+// intervals may contain the projective infinity <https://en.wikipedia.org/wiki/Projectively_extended_real_line>
 // (this allows sensible division by intervals containing 0,
 // and also allows taking the complement of an interval)
 
@@ -92,6 +93,14 @@ qtl::interval // interval arithmetic, with trinary logic comparisons
 // so we need to distinguish it from operator ~/*complement*/(0<=x::x<=1).  
 // (∞<x::x<∞) could also be described as a completely unknown value, so it could be
 // semantically confusing that Unknown is also True.
+
+// note: typical treatments of interval arithmetic
+// <https://en.wikipedia.org/wiki/Interval_arithmetic>
+// <https://www.boost.org/doc/libs/1_66_0/libs/numeric/interval/doc/interval.htm>
+// <http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2006/n2137.pdf>
+// don't distinguish intervals including end points from intervals excluding end points.
+// that	distinction is unimportant for modeling rounding errors
+// but is important for predicates in a query
 ```
 
 qtl/tree.h
