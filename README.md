@@ -43,11 +43,9 @@ qtl::number // contains std::is_arithmetic types or decfloat, stored in qtl::str
 // todo: figure out library path to get <charconv> working 
 ```
 
-qtl/bool.h
-```c++
-qtl::kleen/*e*/ // True/False/Maybe logic ( https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics )
-// "e" is dropped from (Stephen) Kleene, as "e" is dropped from (George) Boole 
-```
+qtl/bool.h\
+```qtl::kleen/*e*/ // True/False/Maybe logic``` [en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics](https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics)\
+```// "e" is dropped from (Stephen) Kleene, as "e" is dropped from (George) Boole ```
 
 qtl/bounds.h
 ```c++
