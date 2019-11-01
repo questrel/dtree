@@ -46,8 +46,13 @@ qtl::number // contains std::is_arithmetic types or decfloat, stored in qtl::str
 
 qtl/bool.h
 <!-- language: c++ --> 
-```qtl::kleen/*e*/ // True/False/Maybe logic``` [en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics](https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics)\
-```// "e" is dropped from (Stephen) Kleene, as "e" is dropped from (George) Boole ```
+```c++
+qtl::kleen/*e*/ // True/False/Maybe logic
+```
+<https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics>
+```c++
+// "e" is dropped from (Stephen) Kleene, as "e" is dropped from (George) Boole 
+```
 
 qtl/bounds.h
 ```c++
