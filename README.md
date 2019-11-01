@@ -60,8 +60,8 @@ template<typename T> qtl::bounds<T>  // T is a scalar type suporting <=>, can be
 T value;
 --value or (x::x|value) // boundary below value. i.e. between (x::x<value) and (value<=x::x)
 value++ or (value|x::x) // boundary above value. i.e. between (x::x<=value) and (value<x::x)  
-// --"" is the projective infinity ( https://en.wikipedia.org/wiki/Point_at_infinity )
-// note: the projective infinity violates transitivity, since
+// --"" is the projective infinity (<https://en.wikipedia.org/wiki/Point_at_infinity>)
+// note: the projective infinity violates antisymmetry, since
 // --"" < declval<T>() and declval<T>() < --"" are both true
 // that's ok, since --"" is not part of T (!std::is_same<T,decltype(--"")>) but caution in corner cases is advisable 
 // todo: \U221E ( ∞ ) and x::x/0 should be synonyms for --""
@@ -158,17 +158,17 @@ which is basically as much of SQL as one cares to implement, since abundant SQL 
 Rather, I think we want to explain the underlying model well enough
 so that users can understand how to implement whatever SQL or other behavior they may be interested in.
 
-The basic abstraction I want to present is like 
+The basic abstraction I want to present would be
   std::map<selector,selection>
 where selection is a vector (rows) of vectors (columns) of values,
-amd selection can be an arbitrary predicate to be satisfied by the values within the selected rows,
+and selection can be an arbitrary predicate to be satisfied by the values within the selected rows,
 or a restriction to columns with particular values or to a particular subset of columns.
 You would be able to retrieve a selection with
   selection = map[selector];
 or insert new selections with
   map[selector] = selection;
 also
-  selection = selecton[selector];
+  selection = selection[selector];
 could be used to refine a selection.
 (so the initial map in map[selection] can be thought of as a selection with a universal selector)
 
@@ -189,10 +189,10 @@ qtl/randstream.h
 ```c++
 // turn stream of random values from one arbitrary distribution
 // into stream of random values from another arbitrary distriburion
-// uses Arithmetic Coding ( https://en.wikipedia.org/wiki/Arithmetic_coding ) for optimal entropy buffering
+// uses [Arithmetic Coding]( https://en.wikipedia.org/wiki/Arithmetic_coding ) for optimal entropy buffering
 #if 0
 This is essentially the application for which I had originally invented Arithmetic Coding,
-a year before it appeared in a widely circulated journal article https://dl.acm.org/citation.cfm?doid=214762.214771
+a year before it appeared in a widely circulated journal article <https://dl.acm.org/citation.cfm?doid=214762.214771>
 in which I leared that it had been previously invented a decade earlier.
 #endif
 // used internally to turn random afl-fuzz input into nicely distributed tests
