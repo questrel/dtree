@@ -61,6 +61,7 @@ value++ or (value|x::x) // boundary above value. i.e. between (x::x<=value) and 
 ```
 
 qtl/interval.h
+@emckean
 ```c++
 qtl::interval // interval arithmetic, with trinary logic comparisons
 // intervals may contain the projective infinity https://en.wikipedia.org/wiki/Projectively_extended_real_line
