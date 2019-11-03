@@ -1,6 +1,10 @@
 draft documentation outline
 
 qtl = QuesTreL Template Library
+(meant to suggest an analogy with the Standard Template Library, std::)
+(The name of the STL is called std,
+but of course that's not what it really is)
+qtl is my own invention
 
 A qtl::container object is analogous to a std::container object
 where container is a string or scalar or vector<container> or tuple<container...>
@@ -18,7 +22,7 @@ or comparisons between scalars and strings
 
 Intervals represent a range of scalar or string values.
 Intervals are represented by their boundaries.
-Boundary points are not scalar or string values, but fall between scalar or string values
+Boundary points are not scalar or string values, but fall between values
 (thus there is no need to distinguish whether an interval between boundaries includes or excludes its end points)
 Arithmetic on intervals yields an interval
 todo: support interval versions of <cmath> functions
@@ -101,7 +105,7 @@ or qtl::scalar literals
   123_s
 analogous to to 123l or 123f
 
-the interval {x : a < x <= b} (x such that x is greater than a and less than or equal to b)
+the interval {x : a < x <= b} "x such that x is greater than a and less than or equal to b"
 can be written as
   a < x::x <= b
 the right-unbounded interval  {x : a <= x} can be written as
@@ -138,7 +142,7 @@ so (a|x::x, x::x|b) and (a++, --b) and (a < x::x < b) are equivalent
 also, (x::x|a, a|x::x) and (--a, a++) and (a <= x::x <= a) and (x::x==a) and (x::x[a]) are equivalent
 
 x::x is a magic variable with a magic type that allows us to appropriately overload operators
-(x::x<a) is meant to suggest the { x : x < a } "x such that x is less than a" set notation 
+(x::x<a) is meant to suggest the { x : x < a } "x such that x is less than a" set-builder notation <https://www.google.com/search?q=set+builder+notation>
 
 (a < x::x < b) is the same as (a<x::x) && (x::x<b)
 which means that (a<x::x) is actually another magic type with an implicit conversion to qtl::interval 
@@ -147,7 +151,7 @@ even though in other contexts b might be implicitly converted to (b<=x::x<=b)
 
 (x::x|a) and (a|x::x) boundaries are meant to suggest Dedekind cuts or Surreal Numbers
 
-The analogies seem familar to me having, been woking on them for a while,
+The analogies seem familar to me, having been working with them for a while,
 but may not be as helpful to someone unfamilar with the borrowed concepts,
 to whom it may seem like giberish, or to someone familar with the borrowed concepts,
 to whom the way I twist the standard concepts may be confusing.
@@ -162,5 +166,5 @@ Since different ways of representing boundaries or intervals may seem more or le
 to different people, there are different output flags (analogous to std::ios_base::fmtflags)
 for selecting the way operator<< prints them to qtl::ostream, but my choices may not have
 been the ones easiest to explain (or the choiches I would have made if I were making them now)
-So some of the c++ interface hight want to change if there is a tweak that would make them
+So some of the c++ interface might want to change if there is a tweak that would make them
 more documentable for others.

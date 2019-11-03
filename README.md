@@ -1,11 +1,11 @@
 # dtree
 
 Library is header-only\
-depends on boost::spirit::X3 and boost::multiprecision::cpp_dec_float (if you want decfloat support)\
-(dependence on boost::core::demangle being deprecated in favor of `__PRETTY_FUNCTION__`)\
 requires --std=c++17\
-todo: get g++ working again
-
+depends on boost::spirit::X3 and boost::multiprecision::cpp_dec_float (if you want decfloat support)\
+(dependence on boost::core::demangle being deprecated in favor of `__PRETTY_FUNCTION__`\
+This may reduce portability of our output formats, though it has been tested under clang and g++)\
+todo: get g++ working again (which started failing for other unknown reasons)
 
 qtl/out.h
 ```c++
@@ -22,7 +22,6 @@ qtl::string // like std::string_view, can contain std::string or std::vector<std
 ```
 
 qtl/container.h
-<!-- language: c++ --> 
 ```c++
 template<typename T> qtl::vector<T>;
 template<typename T...> qtl::tuple<T...>;
@@ -45,33 +44,26 @@ qtl::number // contains std::is_arithmetic types or decfloat, stored in qtl::str
 ```
 
 qtl/bool.h
-<!-- language: c++ --> 
-```c++
-qtl::kleen/*e*/ // True/False/Maybe logic
-```
-<https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics>
-```c++
-// "e" is dropped from (Stephen) Kleene, as "e" is dropped from (George) Boole 
-```
+```qtl::kleen/*e*/ // True/False/Maybe logic``` [en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics](https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics)
+```//"e" is dropped from (Stephen) Kleene, as "e" is dropped from (George) Boole```
 
 qtl/bounds.h
 ```c++
-template<typename T> qtl::bounds<T>  // T is a scalar type suporting <=>, can be number or string
+template<typename T> qtl::bounds<T> // T is a scalar type suporting <=>, can be number or string
 T value;
 --value or (x::x|value) // boundary below value. i.e. between (x::x<value) and (value<=x::x)
 value++ or (value|x::x) // boundary above value. i.e. between (x::x<=value) and (value<x::x)  
-// --"" is the projective infinity (<https://en.wikipedia.org/wiki/Projectively_extended_real_line>)
-// note: *not* the affine infintities <https://en.wikipedia.org/wiki/Extended_real_number_line>
-// note: the projective infinity violates antisymmetry, since
-// --"" < declval<T>() and declval<T>() < --"" are both true
-// that's ok, since --"" is not part of T (!std::is_same<T,decltype(--"")>) but caution in corner cases is advisable 
-// todo: \U221E ( ∞ ) and x::x/0 should be synonyms for --""
+// --""_s is the [projective infinity](https://en.wikipedia.org/wiki/Point_at_infinity)
+// note: the projective infinity violates transitivity, since
+// --""_s < declval<T>() and declval<T>() < --""_s are both true
+// that's ok, since --""_s is not part of T (!std::is_same<T,decltype(--""_s)>) but caution in corner cases is advisable 
+// todo: \U221E ( ∞ ) and x::x/0 should be synonyms for --""_s
 ```
 
 qtl/interval.h
 ```c++
 qtl::interval // interval arithmetic, with trinary logic comparisons
-// intervals may contain the projective infinity <https://en.wikipedia.org/wiki/Projectively_extended_real_line>
+// intervals may contain the projective infinity https://en.wikipedia.org/wiki/Projectively_extended_real_line
 // (this allows sensible division by intervals containing 0,
 // and also allows taking the complement of an interval)
 
@@ -83,30 +75,74 @@ qtl::interval // interval arithmetic, with trinary logic comparisons
 // The interval from projective infinity to projective infinity (∞<x::x<∞)
 // represents a value that could be anything.
 // It is also the interval representation of the kleen::True value.
-// The kleen::False value is represented by (0<=x::x<0), the interval between (x::x|0) and (x::x|0),
+
+// The kleen::False value is represented by (0<=x::x<0), with (x::x|0), i.e. (--0_s), for both boundaries,
 // which is an interval that contains no values.
+// (all empty intervals are equivalent, but our canonical representation,
+// returned by static_cast<interval>(kleen::False)
+// uses the boundary between negative and non-negative scalars.
+// ?would it be better to use (""_s<x::x<=""_s), with (""_s|x::x), i.e. (""_s++), for both boundaries
+// since (--""_s) i.e. (x::x|""_s) is our representation of the projective infinity?)
+// (""_s is not the string representation of any scalar)
+
 // kleen::Maybe is represented by the interval (0<=x::x<=1)
-// so the && and || operations on intervals have the natural interpretation for True/False/Maybe values.
-// This may be counter intuitive if one was expecting x::x[0] to represent False and x::x[1] to represent True,
-// (0<=x::x<=1) for Maybe does fit that convention, but that could be confusing because
-// operator !/*not*/(0<=x::x<=1), unfortunately doesn't bridge intervals and kleens quite as well
-// so we need to distinguish it from operator ~/*complement*/(0<=x::x<=1).  
+// so the && and || operations on intervals operate properly on True/False/Maybe values.
+
+// This may be counter intuitive if one was expecting the common convention of using
+// x::x[0] to represent False and x::x[1] to represent True.
+// (0<=x::x<=1) for Maybe would naturally fit that convention,
+// but then && and || for intervals won't work on static_cast<interval>(kleen).
+// If I want && and || on intervals to work as intersection and union,
+// so that (a < x::x) && (x::x < b) is the same as (a < x::x <b),
+// then the Maybe interval must be a superset of the False interval
+// and the True interval must be a superset of the Maybe interval
+
+// Unfortunately, operator !/*not*/(0<=x::x<=1), doesn't bridge intervals and kleens quite as well
+// since !Maybe and Maybe are different as intervals, but the same as kleens.
+// operator ~/*complement*/(Maybe) can be used, but it could be semantically confusing if
+// (0<=x::x<=1) is the same as the complement of (0<=x::x<=1)
+// The user could always say static_cast<interval>(static_cast<kleen>(Interval))
+// to force kleen logic behavior when that's what they want.
+
 // (∞<x::x<∞) could also be described as a completely unknown value, so it could be
 // semantically confusing that Unknown is also True.
+// (which is part of why I called the third logic value Maybe instead of Unknown)
+
+// note: a union of intervals, or an intersection with an interval that contains the projective infinity
+// (I haven't found or settled on a standard terminology for such intervals.
+// internally, I have the test is_bipole(). but a term more intuitive to others may be
+// useful when trying to describe nuances like these to others) 
+// could result in two disjoint intervals.
+// I did not want to generalize the qtl::interval concept to cover
+// multiple disjoint intervals, since that could result in a combinatorial
+// explosion if you continue to take unions and intersections of multiple disjoint intervals.
+// Also, expressions like sin(a) == (0<=x::x<=1) could generate an infinite number of disjoint intervals.
+// So I cannonically return a single interval covering both.
+// When there is an ambiguity which way to wrap, I prefer smaller intervals not containing the projective infinity
+// Predicates satisfied by multiple disjoint intervals can stil be described by expressions containing && and ||
+// Although sin(a) == (0<=x::x<=1) may have to return Maybe when a spans a large interval,
+// we can still resolve it to True or False as a gets sufficiently refined.
 
 // note: typical treatments of interval arithmetic
 // <https://en.wikipedia.org/wiki/Interval_arithmetic>
 // <https://www.boost.org/doc/libs/1_66_0/libs/numeric/interval/doc/interval.htm>
 // <http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2006/n2137.pdf>
 // don't distinguish intervals including end points from intervals excluding end points.
-// that	distinction is unimportant for modeling rounding errors
-// but is important for predicates in a query
+// that distinction is unimportant for modeling rounding errors
+// but is important for predicates in a query on exact values.
+// Typical treatments may also punt on issues of division by intervals containg 0
+// or trimodal comparison logic.
+// ("punt" may be too much of an Americanism,
+// worknic seems to be one of the few on-line dictionaries that include my intended sense
+// but even there I didn't find a good synonym)
+// (some of the synonyms looked more like synonyms for "pun"
+// it may be more useful if synonyms could be divided by sense)
 ```
 
 qtl/tree.h
 ```c++
 // expression trees 
-qtl::optree(Operator,vector<Operands>)
+qtl::optree(operator,vector<operands>)
 using qtl::expr=optree<interval,vector<interval>>;
 #define op(O) qtl::expr operator O(const qtl::expr& left, const qtl::expr& right);
 op(+) op(-) op(*) op(/) op(<) op(<=) op (==) op(!=) op(>=) op(>) op(&&) op(||) ...
@@ -159,7 +195,7 @@ qtl/sql.h
 ```c++
 // toy sql parser turning simple sql queries into qtl::store[] queries
 #if 0
-Erin, I'm not sure there's much point in documenting the behavior if this module,
+@Erin, I'm not sure there's much point in documenting the behavior of this module,
 which is basically as much of SQL as one cares to implement, since abundant SQL doccumentation already exists.
 Rather, I think we want to explain the underlying model well enough
 so that users can understand how to implement whatever SQL or other behavior they may be interested in.
@@ -168,7 +204,7 @@ The basic abstraction I want to present would be
   std::map<selector,selection>
 where selection is a vector (rows) of vectors (columns) of values,
 and selection can be an arbitrary predicate to be satisfied by the values within the selected rows,
-or a restriction to columns with particular values or to a particular subset of columns.
+or a restriction to columns with particular values [or to a particular subset of columns].
 You would be able to retrieve a selection with
   selection = map[selector];
 or insert new selections with
@@ -176,18 +212,15 @@ or insert new selections with
 also
   selection = selection[selector];
 could be used to refine a selection.
-(so the initial map in map[selection] can be thought of as a selection with a universal selector)
+(so in the initial map[selection], map can be thought of as a selection with a universal selector)
 
-This may seem like a stretch of the std::map concept, and unlike the usual map because the result of
+This may seem like a stretch of the std::map concept, and unconventional in that the result of
   map[selector]
 can be changed by
   map[different_selector] = selection;
 But I'm not seeing a guarantee in the c++ documentation that std::map values must be independent for different keys
-Or, it may be conceptually better to think of the selection returned by map[selector] as a pointer to the actual selection
+Or, it may be conceptually better to think of the object returned by map[selector] as an accessor to the actual selection
 Especially when shared memory is implemented and different users can influence each others results.
-
-I do see a specification that says std::map.count(key) returns 0 or 1
-but not a specification that would require map[key].size() to return 0 or 1
 #endif
 ```
 
@@ -195,7 +228,7 @@ qtl/randstream.h
 ```c++
 // turn stream of random values from one arbitrary distribution
 // into stream of random values from another arbitrary distriburion
-// uses [Arithmetic Coding]( https://en.wikipedia.org/wiki/Arithmetic_coding ) for optimal entropy buffering
+// uses [Arithmetic Coding](https://en.wikipedia.org/wiki/Arithmetic_coding) for optimal entropy buffering
 #if 0
 This is essentially the application for which I had originally invented Arithmetic Coding,
 a year before it appeared in a widely circulated journal article <https://dl.acm.org/citation.cfm?doid=214762.214771>
