@@ -144,10 +144,12 @@ also, (x::x|a, a|x::x) and (--a, a++) and (a <= x::x <= a) and (x::x==a) and (x:
 x::x is a magic variable with a magic type that allows us to appropriately overload operators
 (x::x<a) is meant to suggest the { x : x < a } "x such that x is less than a" set-builder notation <https://www.google.com/search?q=set+builder+notation>
 
-(a < x::x < b) is the same as (a<x::x) && (x::x<b)
-which means that (a<x::x) is actually another magic type with an implicit conversion to qtl::interval 
-(a<x::x<b) is not the same as (a<x::x) < (b<=x::x<=b)
-even though in other contexts b might be implicitly converted to (b<=x::x<=b)
+(a < x::x < b) is the same as (a<x::x && x::x<b),
+not the same as (a<x::x) < x::x[b]
+even though in other expression contexts b might be implicitly converted to x::x[b]
+( a<b is the same as x::x[a] < x::x[b] )
+Which means that (a<x::x) is actually another magic type with an implicit conversion to qtl::interval 
+
 
 (x::x|a) and (a|x::x) boundaries are meant to suggest Dedekind cuts or Surreal Numbers
 

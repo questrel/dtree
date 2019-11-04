@@ -44,6 +44,7 @@ qtl::number // contains std::is_arithmetic types or decfloat, stored in qtl::str
 ```
 
 qtl/bool.h
+<!-- language: c++ --> 
 ```qtl::kleen/*e*/ // True/False/Maybe logic``` [en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics](https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics)
 ```//"e" is dropped from (Stephen) Kleene, as "e" is dropped from (George) Boole```
 
@@ -133,7 +134,7 @@ qtl::interval // interval arithmetic, with trinary logic comparisons
 // Typical treatments may also punt on issues of division by intervals containg 0
 // or trimodal comparison logic.
 // ("punt" may be too much of an Americanism,
-// worknik seems to be one of the few on-line dictionaries that include my intended sense
+// wordnic seems to be one of the few on-line dictionaries that include my intended sense
 // but even there I didn't find a good synonym)
 // (some of the synonyms looked more like synonyms for "pun"
 // it may be more useful if synonyms could be divided by sense)
@@ -142,7 +143,7 @@ qtl::interval // interval arithmetic, with trinary logic comparisons
 qtl/tree.h
 ```c++
 // expression trees 
-qtl::optree(operator,vector<operands>)
+qtl::optree(Operator,vector<Operands>)
 using qtl::expr=optree<interval,vector<interval>>;
 #define op(O) qtl::expr operator O(const qtl::expr& left, const qtl::expr& right);
 op(+) op(-) op(*) op(/) op(<) op(<=) op (==) op(!=) op(>=) op(>) op(&&) op(||) ...
