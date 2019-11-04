@@ -18,17 +18,20 @@ qtl::ostream& operator<<(const &object&) // invokes std::stream << object or obj
 
 qtl/string.h
 ```c++
-qtl::string // like std::string_view, can contain std::string or std::vector<std::string>, maintaining memcmp ordering
+qtl::string // like std::string_view, can contain any std::string, maintaining memcmp ordering
+// can also contain separator tokens that are not part of any std::string 
+// the separator tokens compare less than any std::string
+// there is also a qtl::string value that compares greater than a qtl::string value containing any std::string
 ```
 
 qtl/container.h
 ```c++
 template<typename T> qtl::vector<T>;
 template<typename T...> qtl::tuple<T...>;
-// stored in qtl::string such that memcmp ordering is equivalent to std::lexicographical_compare
+// stored in qtl::string with separators such that memcmp ordering is equivalent to std::lexicographical_compare
 qtl::scalar::depth = 0;
-qtl::vector<T>::depth = T::depth-1;
-qtl::tuple<T..>::depth = std::min<T::depth...>-1;
+qtl::vector<T>::depth = T::depth-1; // note going down in depth gets more negative
+qtl::tuple<T...>::depth = std::min<T::depth...>-1;
 iterator<depth> // iterates over depth level elements
 #if 0
 // Erin, why is there an orange bar under here?
@@ -39,8 +42,13 @@ Would best practice be to keep lines short enough to not scroll?
 
 qtl/number.h
 ```c++
-qtl::number // contains std::is_arithmetic types or decfloat, stored in qtl::string with memcmp ordering
-// todo: figure out library path to get <charconv> working 
+qtl::number // contains values from std::is_arithmetic type or decfloat, stored in qtl::string with memcmp ordering
+// curently supports E−6176 to E6144 range of IEEE decimal128, but is extensible with additional table entries
+// todo: explicitly define unlimited extension schema
+// supports IEEE ±infinity, (although we have our own projective infinity (vide infra) that is not signeed,
+// so IEEE ±infinity are treated more like overflow values than a proper infinity)
+// does not support  ±0 (although we can have underflow values that are not a proper 0)
+// todo: figure out library paths to get <charconv> working on my development system 
 ```
 
 qtl/bool.h
@@ -59,6 +67,9 @@ value++ or (value|x::x) // boundary above value. i.e. between (x::x<=value) and 
 // --""_s < declval<T>() and declval<T>() < --""_s are both true
 // that's ok, since --""_s is not part of T (!std::is_same<T,decltype(--""_s)>) but caution in corner cases is advisable 
 // todo: \U221E ( ∞ ) and x::x/0 should be synonyms for --""_s
+// ("infinity" might be confused with std::numeric_limits<T>::infinity, and "projective_infinity" seems too long
+// the only standard notation I found for the projective infinity was ∞, and that can still be confounded 
+// with other notions of "infinity") 
 ```
 
 qtl/interval.h
@@ -84,7 +95,7 @@ qtl::interval // interval arithmetic, with trinary logic comparisons
 // uses the boundary between negative and non-negative scalars.
 // ?would it be better to use (""_s<x::x<=""_s), with (""_s|x::x), i.e. (""_s++), for both boundaries
 // since (--""_s) i.e. (x::x|""_s) is our representation of the projective infinity?)
-// (""_s is not the string representation of any scalar)
+// (""_s is not the string representation of any scalar value)
 
 // kleen::Maybe is represented by the interval (0<=x::x<=1)
 // so the && and || operations on intervals operate properly on True/False/Maybe values.
@@ -92,17 +103,19 @@ qtl::interval // interval arithmetic, with trinary logic comparisons
 // This may be counter intuitive if one was expecting the common convention of using
 // x::x[0] to represent False and x::x[1] to represent True.
 // (0<=x::x<=1) for Maybe would naturally fit that convention,
-// but then && and || for intervals won't work on static_cast<interval>(kleen).
-// If I want && and || on intervals to work as intersection and union,
+// but then && and || for intervals won't work as logical operators on static_cast<interval>(Kleen).
+// If && and || on intervals are to work as intersection and union,
 // so that (a < x::x) && (x::x < b) is the same as (a < x::x <b),
-// then the Maybe interval must be a superset of the False interval
-// and the True interval must be a superset of the Maybe interval
+// then the interval that repewsents Maybe must be a superset of the interval that represents False,
+// and the interval that represents True must be a superset of theinterval that reperesents Maybe.
 
 // Unfortunately, operator !/*not*/(0<=x::x<=1), doesn't bridge intervals and kleens quite as well
 // since !Maybe and Maybe are different as intervals, but the same as kleens.
 // operator ~/*complement*/(Maybe) can be used, but it could be semantically confusing if
 // (0<=x::x<=1) is the same as the complement of (0<=x::x<=1)
-// The user could always say static_cast<interval>(static_cast<kleen>(Interval))
+// But the user would not normally need to deal with the fact that kleen values are represented as
+// interval values when evaluating expressions, and the user could always use
+// static_cast<interval>(static_cast<kleen>(Interval))
 // to force kleen logic behavior when that's what they want.
 
 // (∞<x::x<∞) could also be described as a completely unknown value, so it could be
@@ -130,7 +143,7 @@ qtl::interval // interval arithmetic, with trinary logic comparisons
 // <https://www.boost.org/doc/libs/1_66_0/libs/numeric/interval/doc/interval.htm>
 // <http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2006/n2137.pdf>
 // don't distinguish intervals including end points from intervals excluding end points.
-// that distinction is unimportant for modeling rounding errors
+// that distinction seems unimportant for modeling rounding errors
 // but is important for predicates in a query on exact values.
 // Typical treatments may also punt on issues of division by intervals containg 0
 // or trimodal comparison logic.
@@ -150,10 +163,11 @@ using qtl::expr=optree<interval,vector<interval>>;
 op(+) op(-) op(*) op(/) op(<) op(<=) op (==) op(!=) op(>=) op(>) op(&&) op(||) ...
 #undef op
 qtl::expr e;
-e.eval() -> interval; // evaluate expression 
-e.bind(std::map<string,expr>).eval() -> interval; // evaluate with named variables bound to values
-e.stringify() -> std::string;  // human readable expression
-e.recurse<function>(Args); // descend tree, recursively performing function on each branch
+interval i = e.eval(); // evaluate expression 
+interval i = e.bind(std::map<string,expr>).eval(); // evaluate with named variables bound to values
+std::string s = e.stringify();  // human readable expression
+                                // todo: e.stringify({pretty print options});
+auto result = e.recurse<function>(Args); // descend tree, recursively performing function on each branch
     // lazyvec args allow short-circuit evaluation for operators like &&, ||
     //  e.recurse<&decltype(e)::eval>() is equivalent to e.eval() 
     //  e.recurse<&decltype(e)::ps>(&decltype(e)::stringify) is equivalent to e.stringify()
@@ -171,6 +185,7 @@ qtl/expr.h
 // parse string into an expression tree
 qtl::expr result;
 auto p=boost:spirit::x3::phrase_parse( string.begin(),string.end(), qtl::expr_rule, boost::spirit::x3::ascii::space_type, result ); // should invert qtl::expr.stringify()
+// <http://charette.no-ip.com:81/programming/doxygen/boost/namespaceboost_1_1spirit_1_1x3.html#a7872ffa13c602499eb94ae6d611f738a>
 // todo: generate parse rules from operators.h
 ```
 
