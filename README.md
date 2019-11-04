@@ -121,6 +121,7 @@ qtl::interval // interval arithmetic, with trinary logic comparisons
 // So I cannonically return a single interval covering both.
 // When there is an ambiguity which way to wrap, I prefer smaller intervals not containing the projective infinity
 // Predicates satisfied by multiple disjoint intervals can stil be described by expressions containing && and ||
+// without need of having a fundamental object that represents multiple disjoint intervals.
 // Although sin(a) == (0<=x::x<=1) may have to return Maybe when a spans a large interval,
 // we can still resolve it to True or False as a gets sufficiently refined.
 
@@ -142,16 +143,17 @@ qtl::interval // interval arithmetic, with trinary logic comparisons
 
 qtl/tree.h
 ```c++
-// expression trees 
+// generic expression trees of the form
 qtl::optree(Operator,vector<Operands>)
 using qtl::expr=optree<interval,vector<interval>>;
 #define op(O) qtl::expr operator O(const qtl::expr& left, const qtl::expr& right);
 op(+) op(-) op(*) op(/) op(<) op(<=) op (==) op(!=) op(>=) op(>) op(&&) op(||) ...
 #undef op
-e.eval() -> interval // evaluate expression 
-e.bind(std::map<string,expr>).eval() -> interval // evaluate with named variables bound to values
-e.stringify() -> std::string  // human readable expression
-e.recurse<function>(Args) // descend tree, recursively performing function on each branch
+qtl::expr e;
+e.eval() -> interval; // evaluate expression 
+e.bind(std::map<string,expr>).eval() -> interval; // evaluate with named variables bound to values
+e.stringify() -> std::string;  // human readable expression
+e.recurse<function>(Args); // descend tree, recursively performing function on each branch
     // lazyvec args allow short-circuit evaluation for operators like &&, ||
     //  e.recurse<&decltype(e)::eval>() is equivalent to e.eval() 
     //  e.recurse<&decltype(e)::ps>(&decltype(e)::stringify) is equivalent to e.stringify()
