@@ -47,7 +47,7 @@ qtl::number // contains values from std::is_arithmetic type or decfloat, stored 
 // todo: explicitly define unlimited extension schema
 // supports IEEE ±infinity, (although we have our own projective infinity (vide infra) that is not signeed,
 // so IEEE ±infinity are treated more like overflow values than a proper infinity)
-// does not support  ±0 (although we can have underflow values that are not a proper 0)
+// does not support -0 (0 is unique, although we can have underflow values distinct ftom a proper 0)
 // todo: figure out library paths to get <charconv> working on my development system 
 ```
 
@@ -148,7 +148,7 @@ qtl::interval // interval arithmetic, with trinary logic comparisons
 // Typical treatments may also punt on issues of division by intervals containg 0
 // or trimodal comparison logic.
 // ("punt" may be too much of an Americanism,
-// wordnic seems to be one of the few on-line dictionaries that include my intended sense
+// Wordnic seems to be one of the few on-line dictionaries that include my intended sense
 // but even there I didn't find a good synonym)
 // (some of the synonyms looked more like synonyms for "pun"
 // it may be more useful if synonyms could be divided by sense)
@@ -236,7 +236,7 @@ This may seem like a stretch of the std::map concept, and unconventional in that
   map[selector]
 can be changed by
   map[different_selector] = selection;
-But I'm not seeing a guarantee in the c++ documentation that std::map values must be independent for different keys
+But I don't see a guarantee in the c++ documentation that std::map values must be independent for different keys
 Or, it may be conceptually better to think of the object returned by map[selector] as an accessor to the actual selection
 Especially when shared memory is implemented and different users can influence each others results.
 #endif
@@ -250,7 +250,7 @@ qtl/randstream.h
 #if 0
 This is essentially the application for which I had originally invented Arithmetic Coding,
 a year before it appeared in a widely circulated journal article <https://dl.acm.org/citation.cfm?doid=214762.214771>
-in which I leared that it had been previously invented a decade earlier.
+from which I leared that it had been previously invented a decade earlier.
 #endif
 // used internally to turn random afl-fuzz input into nicely distributed tests
 ```
