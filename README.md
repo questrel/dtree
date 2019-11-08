@@ -19,7 +19,7 @@ qtl::ostream& operator<<(const &object&) // invokes std::stream << object or obj
 qtl/string.h
 ```c++
 qtl::string // like std::string_view, can contain any std::string, maintaining memcmp ordering
-// can also contain separator tokens that are not part of any std::string 
+// can also contain out of band separator tokens
 // the separator tokens compare less than any std::string
 // there is also a qtl::string value that compares greater than a qtl::string value containing any std::string
 ```
@@ -62,12 +62,12 @@ template<typename T> qtl::bounds<T> // T is a scalar type suporting <=>, can be 
 T value;
 --value or (x::x|value) // boundary below value. i.e. between (x::x<value) and (value<=x::x)
 value++ or (value|x::x) // boundary above value. i.e. between (x::x<=value) and (value<x::x)  
-// --""_s is the [projective infinity](https://en.wikipedia.org/wiki/Point_at_infinity)
+// --""_s is the [projective infinity](https://en.wikipedia.org/wiki/Division_by_zero#Projectively_extended_real_line)
 // note: the projective infinity violates transitivity, since
 // --""_s < declval<T>() and declval<T>() < --""_s are both true
 // that's ok, since --""_s is not part of T (!std::is_same<T,decltype(--""_s)>) but caution in corner cases is advisable 
 // todo: \U221E ( ∞ ) and x::x/0 should be synonyms for --""_s
-// ("infinity" might be confused with std::numeric_limits<T>::infinity, and "projective_infinity" seems too long
+// ("infinity" seems too confusable with std::numeric_limits<T>::infinity(), and "projective_infinity" seems too verbose
 // the only standard notation I found for the projective infinity was ∞, and that can still be confounded 
 // with other notions of "infinity") 
 ```
@@ -95,7 +95,7 @@ qtl::interval // interval arithmetic, with trinary logic comparisons
 // uses the boundary between negative and non-negative scalars.
 // ?would it be better to use (""_s<x::x<=""_s), with (""_s|x::x), i.e. (""_s++), for both boundaries
 // since (--""_s) i.e. (x::x|""_s) is our representation of the projective infinity?)
-// (""_s is not the string representation of any scalar value)
+// (""_s is not the string representation of any scalar value,
 
 // kleen::Maybe is represented by the interval (0<=x::x<=1)
 // so the && and || operations on intervals operate properly on True/False/Maybe values.
@@ -239,6 +239,13 @@ can be changed by
 But I don't see a guarantee in the c++ documentation that std::map values must be independent for different keys
 Or, it may be conceptually better to think of the object returned by map[selector] as an accessor to the actual selection
 Especially when shared memory is implemented and different users can influence each others results.
+
+note on the name Predicate Lattice:
+I find an existing related notion of a Concept Lattice
+<https://en.wikipedia.org/wiki/Formal_concept_analysis#Concept_lattice_of_a_formal_context>
+Like we might think of boundaries as a  Dedekind–MacNeille completion of scalars, 
+a Concept Lattice seems to be a  Dedekind–MacNeille completion of a partial order of attributes
+<https://en.wikipedia.org/wiki/Dedekind%E2%80%93MacNeille_completion#Examples>
 #endif
 ```
 
