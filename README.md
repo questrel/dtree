@@ -5,7 +5,7 @@ requires --std=c++17\
 depends on boost::spirit::X3 and boost::multiprecision::cpp_dec_float (if you want decfloat support)\
 (dependence on boost::core::demangle being deprecated in favor of `__PRETTY_FUNCTION__`\
 This may reduce portability of our output formats, though it has been tested under clang and g++)\
-todo: get g++ working again (which started failing for other unknown reasons)
+todo: get g++ compilations working again (which started failing for other unknown reasons)
 
 qtl/out.h
 ```c++
@@ -43,7 +43,7 @@ Would best practice be to keep lines short enough to not scroll?
 qtl/number.h
 ```c++
 qtl::number // contains values from std::is_arithmetic type or decfloat, stored in qtl::string with memcmp ordering
-// curently supports E−6176 to E6144 range of IEEE decimal128, but is extensible with additional table entries
+// curently supports E−6176 to E+6144 range of IEEE decimal128, but is extensible with additional table entries
 // todo: explicitly define unlimited extension schema
 // supports IEEE ±infinity, (although we have our own projective infinity (vide infra) that is not signeed,
 // so IEEE ±infinity are treated more like overflow values than a proper infinity)
@@ -53,8 +53,9 @@ qtl::number // contains values from std::is_arithmetic type or decfloat, stored 
 
 qtl/bool.h
 <!-- language: c++ --> 
-```qtl::kleen/*e*/ // True/False/Maybe logic``` [en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics](https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics)
+```qtl::kleen/*e*/ // True/False/Maybe logic``` <https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics>
 ```//"e" is dropped from (Stephen) Kleene, as "e" is dropped from (George) Boole```
+@Erin, is there a way to have both c++ syntax highlighting and links on the same line?
 
 qtl/bounds.h
 ```c++
@@ -62,7 +63,7 @@ template<typename T> qtl::bounds<T> // T is a scalar type suporting <=>, can be 
 T value;
 --value or (x::x|value) // boundary below value. i.e. between (x::x<value) and (value<=x::x)
 value++ or (value|x::x) // boundary above value. i.e. between (x::x<=value) and (value<x::x)  
-// --""_s is the [projective infinity](https://en.wikipedia.org/wiki/Division_by_zero#Projectively_extended_real_line)
+// --""_s is the [projective infinity](https://en.wikipedia.org/wiki/Point_at_infinity)
 // note: the projective infinity violates transitivity, since
 // --""_s < declval<T>() and declval<T>() < --""_s are both true
 // that's ok, since --""_s is not part of T (!std::is_same<T,decltype(--""_s)>) but caution in corner cases is advisable 
@@ -75,7 +76,7 @@ value++ or (value|x::x) // boundary above value. i.e. between (x::x<=value) and 
 qtl/interval.h
 ```c++
 qtl::interval // interval arithmetic, with trinary logic comparisons
-// intervals may contain the projective infinity https://en.wikipedia.org/wiki/Projectively_extended_real_line
+// intervals may contain the projective infinity <https://en.wikipedia.org/wiki/Division_by_zero#Projectively_extended_real_line>
 // (this allows sensible division by intervals containing 0,
 // and also allows taking the complement of an interval)
 
@@ -106,14 +107,18 @@ qtl::interval // interval arithmetic, with trinary logic comparisons
 // but then && and || for intervals won't work as logical operators on static_cast<interval>(Kleen).
 // If && and || on intervals are to work as intersection and union,
 // so that (a < x::x) && (x::x < b) is the same as (a < x::x <b),
-// then the interval that repewsents Maybe must be a superset of the interval that represents False,
+// then the interval that represents Maybe must be a superset of the interval that represents False,
 // and the interval that represents True must be a superset of theinterval that reperesents Maybe.
 
-// Unfortunately, operator !/*not*/(0<=x::x<=1), doesn't bridge intervals and kleens quite as well
+// Unfortunately, operator !/*not*/(0<=x::x<=1), doesn't bridge intervals and kleens quite as neatly,
 // since !Maybe and Maybe are different as intervals, but the same as kleens.
+// So either Maybe && !Maybe does something unexpected,
+// or !(x::x==0) is different from (x::x!=0)
 // operator ~/*complement*/(Maybe) can be used, but it could be semantically confusing if
 // (0<=x::x<=1) is the same as the complement of (0<=x::x<=1)
-// But the user would not normally need to deal with the fact that kleen values are represented as
+// So would it be more confusing if ~(x::x==0) meant (x::x!=0), and !(0<=x::x<=1) meant (0<=x::x<=1)
+// or if !(x::x==0) meant (x::x!=0), and ~(0<=x::x<=1) meant (0<=x::x<=1)?
+// But usually the user would not need to deal directly with the fact that kleen values are represented as
 // interval values when evaluating expressions, and the user could always use
 // static_cast<interval>(static_cast<kleen>(Interval))
 // to force kleen logic behavior when that's what they want.
@@ -127,12 +132,12 @@ qtl::interval // interval arithmetic, with trinary logic comparisons
 // internally, I have the test is_bipole(). but a term more intuitive to others may be
 // useful when trying to describe nuances like these to others) 
 // could result in two disjoint intervals.
-// I did not want to generalize the qtl::interval concept to cover
+// I did not want to generalize the qtl::interval concept to encompass
 // multiple disjoint intervals, since that could result in a combinatorial
 // explosion if you continue to take unions and intersections of multiple disjoint intervals.
 // Also, expressions like sin(a) == (0<=x::x<=1) could generate an infinite number of disjoint intervals.
-// So I cannonically return a single interval covering both.
-// When there is an ambiguity which way to wrap, I prefer smaller intervals not containing the projective infinity
+// So in such situations I cannonically return a single interval covering all.
+// When there is an ambiguity which way to wrap, I intervals not containing the projective infinity, or smaller intervals
 // Predicates satisfied by multiple disjoint intervals can stil be described by expressions containing && and ||
 // without need of having a fundamental object that represents multiple disjoint intervals.
 // Although sin(a) == (0<=x::x<=1) may have to return Maybe when a spans a large interval,
@@ -223,7 +228,7 @@ The basic abstraction I want to present would be
 where selection is a vector (rows) of vectors (columns) of values,
 and selection can be an arbitrary predicate to be satisfied by the values within the selected rows,
 or a restriction to columns with particular values [or to a particular subset of columns].
-You would be able to retrieve a selection with
+You'd be able to retrieve a selection with
   selection = map[selector];
 or insert new selections with
   map[selector] = selection;
