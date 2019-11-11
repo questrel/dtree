@@ -53,8 +53,8 @@ qtl::number // contains values from std::is_arithmetic type or decfloat, stored 
 
 qtl/bool.h
 <!-- language: c++ --> 
-```qtl::kleen/*e*/ // True/False/Maybe logic``` <https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics>
-```//"e" is dropped from (Stephen) Kleene, as "e" is dropped from (George) Boole```
+```qtl::kleen/*e*/ // True/False/Maybe logic``` [en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics](https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics)\
+```//"e" is dropped from (Stephen) Kleene, as "e" is dropped from (George) Boole```\
 @Erin, is there a way to have both c++ syntax highlighting and links on the same line?
 
 qtl/bounds.h
