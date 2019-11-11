@@ -18,7 +18,7 @@ qtl::ostream& operator<<(const &object&) // invokes std::stream << object or obj
 
 qtl/string.h
 ```c++
-qtl::string // like std::string_view, can contain any std::string, maintaining memcmp ordering
+class qtl::string; // like std::string_view, can contain any std::string, maintaining memcmp ordering
 // can also contain out of band separator tokens
 // the separator tokens compare less than any std::string
 // there is also a qtl::string value that compares greater than a qtl::string value containing any std::string
@@ -26,8 +26,8 @@ qtl::string // like std::string_view, can contain any std::string, maintaining m
 
 qtl/container.h
 ```c++
-template<typename T> qtl::vector<T>;
-template<typename T...> qtl::tuple<T...>;
+template<typename T> class qtl::vector<T>;
+template<typename T...> class qtl::tuple<T...>;
 // stored in qtl::string with separators such that memcmp ordering is equivalent to std::lexicographical_compare
 qtl::scalar::depth = 0;
 qtl::vector<T>::depth = T::depth-1; // note going down in depth gets more negative
@@ -42,7 +42,7 @@ Would best practice be to keep lines short enough to not scroll?
 
 qtl/number.h
 ```c++
-qtl::number // contains values from std::is_arithmetic type or decfloat, stored in qtl::string with memcmp ordering
+class qtl::number; // contains values from std::is_arithmetic type or decfloat, stored in qtl::string with memcmp ordering
 // curently supports E−6176 to E+6144 range of IEEE decimal128, but is extensible with additional table entries
 // todo: explicitly define unlimited extension schema
 // supports IEEE ±infinity, (although we have our own projective infinity (vide infra) that is not signeed,
@@ -53,16 +53,16 @@ qtl::number // contains values from std::is_arithmetic type or decfloat, stored 
 
 qtl/bool.h
 <!-- language: c++ --> 
-```qtl::kleen/*e*/; // True/False/Maybe logic``` [en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics](https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics)\
+```class qtl::kleen/*e*/; // True/False/Maybe logic``` [en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics](https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics)\
 ```//"e" is dropped from (Stephen) Kleene, as "e" is dropped from (George) Boole```\
 @emckean, is there a way to have both c++ syntax highlighting and links on the same line?
 
 qtl/bounds.h
 ```c++
-template<typename T> qtl::bounds<T> // T is a scalar type suporting <=>, can be number or string
+template<typename T> class qtl::bounds<T>; // T is a scalar type suporting <=>, can be number or string
 constexpr T value;
 --value or (x::x|value) // boundary below value. i.e. between (x::x<value) and (value<=x::x)
-value++ or (value|x::x) // boundary above value. i.e. between (x::x<=value) and (value<x::x)  
+value++ or (value|x::x) // boundary above value. i.e. between (x::x<=value) and (value<x::x) 
 // --""_s is the [projective infinity](https://en.wikipedia.org/wiki/Point_at_infinity)
 // note: the projective infinity violates transitivity, since
 // --""_s < declval<T>() and declval<T>() < --""_s are both true
@@ -75,7 +75,7 @@ value++ or (value|x::x) // boundary above value. i.e. between (x::x<=value) and 
 
 qtl/interval.h
 ```c++
-qtl::interval // interval arithmetic, with trinary logic comparisons
+class qtl::interval; // interval arithmetic, with trinary logic comparisons
 // intervals may contain the projective infinity <https://en.wikipedia.org/wiki/Division_by_zero#Projectively_extended_real_line>
 // (this allows sensible division by intervals containing 0,
 // and also allows taking the complement of an interval)
@@ -133,7 +133,7 @@ qtl::interval // interval arithmetic, with trinary logic comparisons
 // useful when trying to describe nuances like these to others) 
 // could result in two disjoint intervals.
 // I didn't want to generalize the qtl::interval concept to encompass multiple disjoint intervals,
-// since that could entail combinatorial explosions as you perform operations on multiple disjoint intervals.
+// since that could entail combinatorial explosions as you perform operations on them.
 // Also, expressions like sin(a) == (0<=x::x<=1) could represent an infinite number of disjoint intervals.
 // So when the result of an expression would contain multiple disjoint intervals,
 // I cannonically return a single interval covering all.
@@ -161,8 +161,9 @@ qtl::interval // interval arithmetic, with trinary logic comparisons
 
 qtl/tree.h
 ```c++
-// generic expression trees of the form
-qtl::optree(Operator,vector<Operands>)
+// generic expression trees with branches like 
+qtl::optree(Operator,vector<Operands>);
+
 using qtl::expr=optree<interval,vector<interval>>;
 #define op(O) qtl::expr operator O(const qtl::expr& left, const qtl::expr& right);
 op(+) op(-) op(*) op(/) op(<) op(<=) op (==) op(!=) op(>=) op(>) op(&&) op(||) ...
@@ -197,10 +198,10 @@ auto p=boost:spirit::x3::phrase_parse( string.begin(),string.end(), qtl::expr_ru
 qtl/store.h
 ```c++
 // use interval arithmetic and trinary logic to query a database
-lval operator[](qtl::expr) // query on expression predicate
-lval operator[](std::vector<scalar>) // query on prefix
-operator=(lval,std::vector<scalar>) // store value
-operator=(lval,std::nullptr_t) // delete value
+lval operator[](qtl::expr); // query on expression predicate
+lval operator[](std::vector<scalar>); // query on prefix
+operator=(lval,std::vector<scalar>); // store value
+operator=(lval,std::nullptr_t); // delete value
 for( auto x::lvalue ){ qtl::cout << x; } // print values satisfying query
 /* todo:
   lval operator[]( project subset of columns );
@@ -209,7 +210,7 @@ for( auto x::lvalue ){ qtl::cout << x; } // print values satisfying query
   also makes lvalue = vector<value> and lvalue = vector<vector<value>> more useful
   possible implementation:
   extend lval operator[](std::vector<scalar>) // query on prefix
-  to lval operator[](std::vector<interval>) // where the (--0,--0), the False or Empty interval, means to ignore that column
+  to lval operator[](std::vector<interval>) // where (--0,--0), the False or Empty interval, means to ignore that column
   or use std::ignore?
 */
 ```
@@ -248,8 +249,8 @@ Especially when shared memory is implemented and different users can influence e
 note on the name Predicate Lattice:
 I find an existing related notion of a Concept Lattice
 <https://en.wikipedia.org/wiki/Formal_concept_analysis#Concept_lattice_of_a_formal_context>
-Like we might think of boundaries as a  Dedekind–MacNeille completion of scalars, 
-a Concept Lattice seems to be a  Dedekind–MacNeille completion of a partial order of attributes
+Like we might think of boundaries as a Dedekind–MacNeille completion of scalars, 
+a Concept Lattice seems to be a Dedekind–MacNeille completion of a partial order of attributes
 <https://en.wikipedia.org/wiki/Dedekind%E2%80%93MacNeille_completion#Examples>
 #endif
 ```
