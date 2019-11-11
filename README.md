@@ -153,7 +153,7 @@ class qtl::interval; // interval arithmetic, with trinary logic comparisons
 // Typical treatments may also punt on issues of division by intervals contaning 0
 // or trimodal comparison logic.
 // ("punt" may be too much of an Americanism,
-// Wordnic seems to be one of the few on-line dictionaries that include my intended sense
+// Wordnik seems to be one of the few on-line dictionaries that include my intended sense
 // --but even there I didn't find a good synonym)
 // (some of the synonyms looked more like synonyms for "pun"
 // it may be more useful if synonyms could be divided by sense)
