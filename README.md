@@ -53,14 +53,14 @@ qtl::number // contains values from std::is_arithmetic type or decfloat, stored 
 
 qtl/bool.h
 <!-- language: c++ --> 
-```qtl::kleen/*e*/ // True/False/Maybe logic``` [en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics](https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics)\
+```qtl::kleen/*e*/; // True/False/Maybe logic``` [en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics](https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics)\
 ```//"e" is dropped from (Stephen) Kleene, as "e" is dropped from (George) Boole```\
-@Erin, is there a way to have both c++ syntax highlighting and links on the same line?
+@emckean, is there a way to have both c++ syntax highlighting and links on the same line?
 
 qtl/bounds.h
 ```c++
 template<typename T> qtl::bounds<T> // T is a scalar type suporting <=>, can be number or string
-T value;
+constexpr T value;
 --value or (x::x|value) // boundary below value. i.e. between (x::x<value) and (value<=x::x)
 value++ or (value|x::x) // boundary above value. i.e. between (x::x<=value) and (value<x::x)  
 // --""_s is the [projective infinity](https://en.wikipedia.org/wiki/Point_at_infinity)
@@ -132,11 +132,11 @@ qtl::interval // interval arithmetic, with trinary logic comparisons
 // internally, I have the test is_bipole(). but a term more intuitive to others may be
 // useful when trying to describe nuances like these to others) 
 // could result in two disjoint intervals.
-// I did not want to generalize the qtl::interval concept to encompass
-// multiple disjoint intervals, since that could result in a combinatorial
-// explosion if you continue to take unions and intersections of multiple disjoint intervals.
-// Also, expressions like sin(a) == (0<=x::x<=1) could generate an infinite number of disjoint intervals.
-// So in such situations I cannonically return a single interval covering all.
+// I didn't want to generalize the qtl::interval concept to encompass multiple disjoint intervals,
+// since that could entail combinatorial explosions as you perform operations on multiple disjoint intervals.
+// Also, expressions like sin(a) == (0<=x::x<=1) could represent an infinite number of disjoint intervals.
+// So when the result of an expression would contain multiple disjoint intervals,
+// I cannonically return a single interval covering all.
 // When there is an ambiguity which way to wrap, intervals not containing the projective infinity, or smaller intervals are prefered
 // Predicates satisfied by multiple disjoint intervals can stil be described by expressions containing && and ||
 // without need of having a fundamental object that represents multiple disjoint intervals.
@@ -150,11 +150,11 @@ qtl::interval // interval arithmetic, with trinary logic comparisons
 // don't distinguish intervals including end points from intervals excluding end points.
 // that distinction seems unimportant for modeling rounding errors
 // but is important for predicates in a query on exact values.
-// Typical treatments may also punt on issues of division by intervals containg 0
+// Typical treatments may also punt on issues of division by intervals contaning 0
 // or trimodal comparison logic.
 // ("punt" may be too much of an Americanism,
 // Wordnic seems to be one of the few on-line dictionaries that include my intended sense
-// but even there I didn't find a good synonym)
+// --but even there I didn't find a good synonym)
 // (some of the synonyms looked more like synonyms for "pun"
 // it may be more useful if synonyms could be divided by sense)
 ```

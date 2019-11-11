@@ -1,9 +1,13 @@
 draft documentation outline
 
 qtl = QuesTreL Template Library
+(meant to suggest an analogy with the Standard Template Library, std::)
+(The name of the STL is called std,
+but of course that's not what it really is)
+qtl is my own invention
 
 A qtl::container object is analogous to a std::container object
-where container is a string or scalar or tuple<container,container,...> or vector<container>
+where container is a string or scalar or vector<container> or tuple<container...>
 The only methods that have been implemented are the ones that we needed for this project
 generally, conversion to/from the correspoinding std::container, read only forward iterators, and push_back
 todo: add more std::methods to support other uses
@@ -11,14 +15,14 @@ All containers are stored as strings, and are comparable with memcmp
 scalars can contain long or double or decfloat.
 todo: full support for decfloat arithmetic
 scalars take up as much space as needed for the required precision,
-but try to be compact for values that could fit in char/short/half float
+but try to be compact for values that could be represented in small types (char/short/half float)
 arithmetic and comparison operators don't care about the type of object they operate on,
 but are not expected to give sensible results if you do arithmetic on strings 
 or comparisons between scalars and strings
 
 Intervals represent a range of scalar or string values.
 Intervals are represented by their boundaries.
-Boundary points are not scalar or string values, but fall between scalar or string values
+Boundary points are not scalar or string values, but fall between values
 (thus there is no need to distinguish whether an interval between boundaries includes or excludes its end points)
 Arithmetic on intervals yields an interval
 todo: support interval versions of <cmath> functions
@@ -47,7 +51,7 @@ until the predicate can be reduced to True or False
 
 todo: compress common prefix of boundaries of an interval
 todo: compress common prefix of boundary partitions within a node
-todo: support this with a general shared prefix for qtl::string objects
+todo: support the above with a general shared prefix for qtl::string objects
 
 todo: class ranges:public std::variant<interval,std::vector<ranges>>{}
       to support values that represent nested containers,
@@ -56,7 +60,7 @@ todo: class ranges:public std::variant<interval,std::vector<ranges>>{}
       so maybe we just need a notation for binding varibles to container elements
       
 nodes are internal implementation details not normally visible to the c++ user
-the interface to the user looks more like a map with a flexible index
+the interface to the user looks more like a map with a generalized index
 e.g. the equivalent of
   INSERT INTO table_name VALUES 'Column 1', 'Column 2', 'string value', 'then some numbers', 1, 2, 3.14159, 'then another string';
 might be
@@ -78,7 +82,7 @@ might be written as
   }
 
 Expressions can be bound to a symbol table to resove names
-given
+e.g. given
   std::map<std::string,qtl::expr>symtab={
     {"const"s,         "then"_s},
     {"four"s,          4_column},
@@ -93,7 +97,7 @@ for
   "then"_s <= 4_column && 5_column + 6_column < 7_column
 
 
-notation
+notation:
 The user defined suffix qtl::literals::operator""_s, can be used to create qtl::string literals,
   "string"_s
 analogous to std::literals::string_literals::operator""s 
@@ -101,21 +105,22 @@ or qtl::scalar literals
   123_s
 analogous to to 123l or 123f
 
-the interval {x : a < x <= b} can be written as
+the interval {x : a < x <= b} "x such that x is greater than a and less than or equal to b"
+can be written as
   a < x::x <= b
-the right-unbounded interval  {x : a <= x} can be written as
+the right-unbounded interval {x : a <= x} can be written as
   a <= x::x
 the left-unbounded interval {x : x < b} can be written as
   x::x < b
 note: when a < b, (a <= x::x && x::x < b) is the same as (a <= x::x < b)
 
-The point interval {x : a <= x <= a} or {x : x == a} can also be written as
+The interval containing the single point a {x : a <= x <= a} or {x : x == a} can also be written as
   x::x==a
 or as
   x::x[a]
 or just 
   a
-when it is clear by context that an interval is being used
+when context makes it clear that an interval is being used
 
 The projectively wrapped interval {x : x <= a || b < x } i.e. the complement of {x : a < x <= b} can be written as
   x::x <= a || b < x::x 
@@ -133,8 +138,35 @@ or as
 
 if lower and upper are boundaries, the interval between them can also be written as
   (lower,upper)
-so (a | x::x, x::x | b) and (a++, --b) and (a < x::x < b) are equivalent
-also (x::x | a, a | x::x) and (--a, a++) and (a <= x::x <= a) and ( x::x==a ) and (x::x[a]) are equivalent
+so (a|x::x, x::x|b) and (a++, --b) and (a < x::x < b) are equivalent
+also, (x::x|a, a|x::x) and (--a, a++) and (a <= x::x <= a) and (x::x==a) and (x::x[a]) are equivalent
+
+x::x is a magic constant with a magic type that allows us to appropriately overload operators
+(x::x<a) is meant to suggest the { x : x < a } "x such that x is less than a" set-builder notation <https://www.google.com/search?q=set+builder+notation>
+
+(a < x::x < b) is the same as (a<x::x && x::x<b),
+not the same as (a<x::x) < x::x[b]
+even though in other expression contexts b might be implicitly converted to x::x[b]
+( a<b is the same as x::x[a] < x::x[b] )
+Which means that (a<x::x) is actually another magic type with an implicit conversion to qtl::interval 
 
 
+(x::x|a) and (a|x::x) boundaries are meant to suggest Dedekind cuts or Surreal Numbers
 
+Those analogies seem familar to me, having been working with them for a while,
+but may not be as helpful to someone unfamilar with the borrowed concepts,
+to whom it may seem like giberish, or to someone familar with the borrowed concepts,
+to whom the way I twist the standard concepts may be confusing.
+
+Chris also had an explaination of boundaries in terms of infinitesimals,
+(so maybe I should also define a qtl::epsilon, and overload 
+boundary operator+(scalar,epsilon)
+boundary operator-(scalar,epsilon)
+for constructing boundaries)
+
+Since different ways of representing boundaries or intervals may seem more or less intuitive or systematic
+to different people, there are different output flags (analogous to std::ios_base::fmtflags)
+for selecting the way operator<< prints them to qtl::ostream, but my choices may not have
+been the ones easiest to explain (or the choiches I would have made if I were making them now)
+So some of the c++ interface might want to change if there is a tweak that would make them
+more documentable for others.
