@@ -10,9 +10,9 @@ todo: get g++ compilations working again (which started failing for other unknow
 qtl/out.h
 ```c++
 //templates to print std::container<printable elements>
-qtl::ostream& operator<<(const container<object>& o) // invokes qtl::ostream << object
-qtl::ostream& operator<<(const tuple<object...>& o) //  invokes qtl::ostream << object...
-qtl::ostream& operator<<(const &object&) // invokes std::stream << object or object.write(qtl::ostream&)
+qtl::ostream& operator<<(const container<object>& o); // invokes qtl::ostream << object
+qtl::ostream& operator<<(const tuple<object...>& o); //  invokes qtl::ostream << object...
+qtl::ostream& operator<<(const object&); // invokes std::stream << object or object.write(qtl::ostream&)
 // todo: smart formating of nested containers
 ```
 
@@ -47,7 +47,7 @@ class qtl::number; // contains values from std::is_arithmetic type or decfloat, 
 // todo: explicitly define unlimited extension schema
 // supports IEEE ±infinity, (although we have our own projective infinity (vide infra) that is not signeed,
 // so IEEE ±infinity are treated more like overflow values than a proper infinity)
-// does not support -0 (0 is unique, although we can have underflow values distinct ftom a proper 0)
+// does not support -0 (0 is unique, although we can have underflow values distinct from a proper 0)
 // todo: figure out library paths to get <charconv> working on my development system 
 ```
 
@@ -96,7 +96,9 @@ class qtl::interval; // interval arithmetic, with trinary logic comparisons
 // uses the boundary between negative and non-negative scalars.
 // ?would it be better to use (""_s<x::x<=""_s), with (""_s|x::x), i.e. (""_s++), for both boundaries
 // since (--""_s) i.e. (x::x|""_s) is our representation of the projective infinity?)
-// (""_s is not the string representation of any scalar value,
+// (""_s is not the string representation of any scalar value, and is the infimum
+// (which would be another counfounding interpretation of using "Inf" as a name)
+// of all possible string values, leaving room to interpret a boundary lower than it as ∞)
 
 // kleen::Maybe is represented by the interval (0<=x::x<=1)
 // so the && and || operations on intervals operate properly on True/False/Maybe values.
@@ -129,8 +131,8 @@ class qtl::interval; // interval arithmetic, with trinary logic comparisons
 
 // note: a union of intervals, or an intersection with an interval that contains the projective infinity
 // (I haven't found or settled on a standard terminology for such intervals.
-// internally, I have the test is_bipole(). but a term more intuitive to others may be
-// useful when trying to describe nuances like these to others) 
+// internally, I have the test is_bipole(), but a term more intuitive to others may be
+// useful when trying to document nuances like these) 
 // could result in two disjoint intervals.
 // I didn't want to generalize the qtl::interval concept to encompass multiple disjoint intervals,
 // since that could entail combinatorial explosions as you perform operations on them.
@@ -161,7 +163,7 @@ class qtl::interval; // interval arithmetic, with trinary logic comparisons
 
 qtl/tree.h
 ```c++
-// generic expression trees with branches like 
+// generic expression trees with branches of 
 qtl::optree(Operator,vector<Operands>);
 
 using qtl::expr=optree<interval,vector<interval>>;
