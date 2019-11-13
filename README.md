@@ -7,7 +7,7 @@ depends on boost::spirit::X3 and boost::multiprecision::cpp_dec_float (if you wa
 This may reduce portability of our output formats, though it has been tested under clang and g++)\
 todo: get g++ compilations working again (which started failing for other unknown reasons)
 
-qtl/out.h
+### qtl/out.h
 ```c++
 //templates to print std::container<printable elements>
 qtl::ostream& operator<<(const container<object>& o); // invokes qtl::ostream << object
@@ -16,7 +16,7 @@ qtl::ostream& operator<<(const object&); // invokes std::stream << object or obj
 // todo: smart formating of nested containers
 ```
 
-qtl/string.h
+### qtl/string.h
 ```c++
 class qtl::string; // like std::string_view, can contain any std::string, maintaining memcmp ordering
 // can also contain out of band separator tokens
@@ -24,7 +24,7 @@ class qtl::string; // like std::string_view, can contain any std::string, mainta
 // there is also a qtl::string value that compares greater than a qtl::string value containing any std::string
 ```
 
-qtl/container.h
+###qtl/container.h
 ```c++
 template<typename T> class qtl::vector<T>;
 template<typename T...> class qtl::tuple<T...>;
