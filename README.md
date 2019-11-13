@@ -7,7 +7,7 @@ depends on boost::spirit::X3 and boost::multiprecision::cpp_dec_float (if you wa
 This may reduce portability of our output formats, though it has been tested under clang and g++)\
 todo: get g++ compilations working again (which started failing for other unknown reasons)
 
-### qtl/out.h
+#### qtl/out.h
 ```c++
 //templates to print std::container<printable elements>
 qtl::ostream& operator<<(const container<object>& o); // invokes qtl::ostream << object
@@ -16,7 +16,7 @@ qtl::ostream& operator<<(const object&); // invokes std::stream << object or obj
 // todo: smart formating of nested containers
 ```
 
-### qtl/string.h
+#### qtl/string.h
 ```c++
 class qtl::string; // like std::string_view, can contain any std::string, maintaining memcmp ordering
 // can also contain out of band separator tokens
@@ -24,7 +24,7 @@ class qtl::string; // like std::string_view, can contain any std::string, mainta
 // there is also a qtl::string value that compares greater than a qtl::string value containing any std::string
 ```
 
-###qtl/container.h
+#### qtl/container.h
 ```c++
 template<typename T> class qtl::vector<T>;
 template<typename T...> class qtl::tuple<T...>;
@@ -40,7 +40,7 @@ Would best practice be to keep lines short enough to not scroll?
 #endif
 ```
 
-qtl/number.h
+#### qtl/number.h
 ```c++
 class qtl::number; // contains values from std::is_arithmetic type or decfloat, stored in qtl::string with memcmp ordering
 // curently supports E−6176 to E+6144 range of IEEE decimal128, but is extensible with additional table entries
@@ -51,13 +51,13 @@ class qtl::number; // contains values from std::is_arithmetic type or decfloat, 
 // todo: figure out library paths to get <charconv> working on my development system 
 ```
 
-qtl/bool.h
+#### qtl/bool.h
 <!-- language: c++ --> 
 ```class qtl::kleen/*e*/; // True/False/Maybe logic``` [en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics](https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics)\
 ```//"e" is dropped from (Stephen) Kleene, as "e" is dropped from (George) Boole```\
 @emckean, is there a way to have both c++ syntax highlighting and links on the same line?
 
-qtl/bounds.h
+#### qtl/bounds.h
 ```c++
 template<typename T> class qtl::bounds<T>; // T is a scalar type suporting <=>, can be number or string
 constexpr T value;
@@ -76,7 +76,7 @@ value++ or (value|x::x) // boundary above value. i.e. between (x::x<=value) and 
 // of all possible string values, leaving room to interpret a boundary lower than it as ∞)
 ```
 
-qtl/interval.h
+#### qtl/interval.h
 ```c++
 class qtl::interval; // interval arithmetic, with trinary logic comparisons
 // intervals may contain the projective infinity <https://en.wikipedia.org/wiki/Division_by_zero#Projectively_extended_real_line>
@@ -104,10 +104,12 @@ class qtl::interval; // interval arithmetic, with trinary logic comparisons
 // kleen::Maybe is represented by the interval (0<=x::x<=1)
 // so the && and || operations on intervals operate properly on True/False/Maybe values.
 
-// The choices may seem unconventional if one was expecting
+// Those choices may seem unconventional if one was expecting
 // x::x[0] to represent False and x::x[1] to represent True.
 // (0<=x::x<=1) for Maybe would naturally fit that convention,
-// but then && and || for intervals won't work as logical operators on static_cast<interval>(Kleen).
+// and && and || might be implemented as min and max
+// but then && and || as logical operators on static_cast<interval>(Kleen)
+// won't work as intersection and union on intervals
 // If && and || on intervals are to work as intersection and union,
 // so that (a < x::x) && (x::x < b) is the same as (a < x::x <b),
 // then the interval that represents Maybe must be a superset of the interval that represents False,
@@ -173,7 +175,7 @@ class qtl::interval; // interval arithmetic, with trinary logic comparisons
 // it may be more useful if synonyms could be divided by sense)
 ```
 
-qtl/tree.h
+#### qtl/tree.h
 ```c++
 // generic expression trees with branches of 
 qtl::optree(Operator,vector<Operands>);
@@ -195,12 +197,12 @@ auto result = e.recurse<function>(Args); // descend tree, recursively performing
 // todo???: can store.h be defined as an instantiation of optree?  store.recurse<find>(predicate)? 
 ```
 
-qtl/operators.h
+#### qtl/operators.h
 ```c++
 // table of operators and precedence hierarchy used by tree.h
 ```
 
-qtl/expr.h
+#### qtl/expr.h
 ```c++
 // parse string into an expression tree
 qtl::expr result;
@@ -211,7 +213,7 @@ auto p=boost:spirit::x3::phrase_parse( string.begin(),string.end(), qtl::expr_ru
 // todo: generate parse rules from operators.h
 ```
 
-qtl/store.h
+### qtl/store.h
 ```c++
 // use interval arithmetic and trinary logic to query a database
 lval operator[](qtl::expr); // query on expression predicate
@@ -231,7 +233,7 @@ for( auto x::lvalue ){ qtl::cout << x; } // print values satisfying query
 */
 ```
 
-qtl/sql.h
+### qtl/sql.h
 ```c++
 // toy sql parser turning simple sql queries into qtl::store[] queries
 #if 0
@@ -271,7 +273,7 @@ a Concept Lattice seems to be a Dedekind–MacNeille completion of a partial ord
 #endif
 ```
 
-qtl/randstream.h
+### qtl/randstream.h
 ```c++
 // turn stream of random values from one arbitrary distribution
 // into stream of random values from another arbitrary distriburion
@@ -284,7 +286,7 @@ from which I leared that it had been previously invented a decade earlier.
 // used internally to turn random afl-fuzz input into nicely distributed tests
 ```
 
-test.cpp
+### test.cpp
 ```c++
 // invokes qtl/module.h to generate a test exercizer for module
 //#define TEST_H "qtl/module.h"
