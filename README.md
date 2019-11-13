@@ -290,7 +290,7 @@ test.cpp
 //#define TEST_H "qtl/module.h"
 #include TEST_H
 ```
-[see also](doc)\
+[see also](doc)
 
 ## Installation Instructions
 
