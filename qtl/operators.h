@@ -1,7 +1,7 @@
 #if 1
 //X(name,arity,operator,prefix|postfix|left infix|right infix,precedence after)
-#define multiplies_identity 1
-#define divides_identity 1
+#define multiplies_identity (lex::number)1
+#define divides_identity (lex::number)1
 #define plus_identity 0
 #define minus_identity 0
 #define logical_or_identity 0

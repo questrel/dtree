@@ -6,7 +6,7 @@
 #include <boost/core/demangle.hpp>
 #include <iostream>
 #include <utility>
-//#include <charconv>
+#include <charconv>
 #include "string.h"
 #include "out.h"
 #ifndef __clang__
@@ -929,7 +929,7 @@ TABLE_CMP
    template<typename T,typename = std::enable_if_t<std::is_scalar<T>::value>>
    scalar(T t):base_t(t){}
    scalar(const lex::number &s):base_t(s){}
-   scalar(const char *s):base_t(std::string(s)){}   
+   scalar(const char *s):base_t(std::string(s)){}
    scalar(const std::string &s):base_t(lex::raw(lex::string(s))){}
    scalar(const lex::string &s):base_t(lex::raw(s)){}
    size_t size(){ return _this.size(); }

@@ -414,8 +414,8 @@ namespace qtl{
 	*this=nullptr;
       }
       if( k==kleen::F ){
-        u().value()=0;
-        l().value()=0;
+        u().value()=(lex::number)0;
+        l().value()=(lex::number)0;
       }
       if( k!=kleen::T ){
       }
@@ -808,7 +808,7 @@ bool contains0()const{
           return basic_interval(); \
          } \
      }									\
-     if( 0 o 1 == 0 && a.is_point(0) ){ return basic_interval(0,infi,0,supre); } \
+     if( 0 o 1 == 0 && a.is_point((lex::number)0) ){ return basic_interval((lex::number)0,infi,(lex::number)0,supre); } \
      int x=(sign)a.l()+(sign)a.u(); \
      int y=(sign)b.l()+(sign)b.u(); \
      if( y==0 && x==0 ){ \
@@ -861,7 +861,7 @@ bool contains0()const{
 #endif
   basic_interval operator^(const basic_interval &b)const{
     if( is_point() && b.is_point() ){
-      return std::pow((lex::number)this->l().value(),(lex::number)b.l().value());
+      return (lex::number)std::pow((lex::number)this->l().value(),(lex::number)b.l().value());
     }
     std::cerr << __PRETTY_FUNCTION__ << " not implemented\n";
     return *this;
@@ -883,7 +883,7 @@ bool contains0()const{
 	  return {b.l(),a.u()};
         }
       //	return  {{0,infi},{0,infi}};
-      return  {b_t(0,infi),b_t(0,infi)};
+      return  {b_t((lex::number)0,infi),b_t((lex::number)0,infi)};
     };
 
     NOTRACE( std::cerr << __PRETTY_FUNCTION__ << '\n'; )
@@ -899,7 +899,7 @@ bool contains0()const{
           return {lb,ub};
         }else{
 	  NOTRACE( std::cerr << __LINE__ << '\n'; )
-	     return {b_t(0,infi),b_t(0,infi)}; 
+	     return {b_t((lex::number)0,infi),b_t((lex::number)0,infi)}; 
         }
       }else{ 
 	return cp(*this,b);
@@ -1078,21 +1078,21 @@ bool contains0()const{
     case 0:{ if( l().ma()<(sign)0 ){ NOTRACE( std::cerr << "return l()=" << l().value() << '\n'; ) return l().value(); } };break;
     case 5:{ if( (sign)0<u().ma() ){ NOTRACE( std::cerr << "return u()=" << u().value() << '\n'; ) return u().value(); } };break;
      };
-       return (S)d2(l().value(),u().value());
+       return (S)(lex::number)d2(l().value(),u().value());
    }
   
     static basic_interval abs(const basic_interval &a){
-      if( a.l() < 0 && 0 < a.u() ){
+      if( a.l() < (lex::number)0 && (lex::number)0 < a.u() ){
 	//        return {{0,infi},{max(-a.l(),a.u())}};
-	return {b_t(0,infi),b_t(max(-a.l(),a.u()))};
+	return {b_t((lex::number)0,infi),b_t(max(-a.l(),a.u()))};
       }
-      if( a.u()<0 && 0 < a.l() ){
+      if( a.u()<(lex::number)0 && (lex::number)0 < a.l() ){
 	NOTRACE( std::cerr << min(-a.u(),a.l()) << '\n'; )
 	NOTRACE( std::cerr << basic_interval({min(-a.u(),a.l())},{lex::string,infi}) << '\n'; )
 	//	return {{min(-a.u(),a.l())},{}};
 	return {b_t(min(-a.u(),a.l())),b_t()};
       }
-      if( 0 <= a.l() && 0 <= a.u() ){
+      if( (lex::number)0 <= a.l() && (lex::number)0 <= a.u() ){
 	return a;
       }
       /*if( a.l()<=0  &&  a.u()<=0 )*/{
@@ -1500,7 +1500,7 @@ std::cout <<  qtl::setverbose(qtl::ios_base::fmtflags::none|qtl::ios_base::fmtfl
 #if 1
   //  std::cout << std::dec << std::plus<qtl::interval>()(qtl::interval(1,2),qtl::interval(3,5)) << std::endl;
   std::cout << qtl::setverbose(qtl::ios_base::fmtflags::none);
-  std::cout << std::dec << qtl::interval(1,2) + qtl::interval(3,5) << '\n';
+  std::cout << std::dec << qtl::interval((lex::number)1,(lex::number)2) + qtl::interval((lex::number)3,(lex::number)5) << '\n';
   std::cout << std::dec << (1 <= x::x < 2) + (3 <= x::x < 5) << '\b';
 #endif
 #if 0
