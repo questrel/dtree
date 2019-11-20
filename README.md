@@ -5,7 +5,7 @@ requires --std=c++17\
 depends on boost::spirit::X3 and boost::multiprecision::cpp_dec_float (if you want decfloat support)\
 (dependence on boost::core::demangle being deprecated in favor of `__PRETTY_FUNCTION__`\
 This may reduce portability of our output formats, though it has been tested under clang and g++)\
-todo: get g++ compilations working again (which started failing for other unknown reasons)
+~~todo: get g++ compilations working again (which started failing for other unknown reasons)~~
 
 #### qtl/out.h
 ```c++
