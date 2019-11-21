@@ -295,7 +295,7 @@ from which I leared that it had been previously invented a decade earlier.
 //#define TEST_H "qtl/module.h"
 #include TEST_H
 ```
-### <test.bash>
+### test.bash
 ```bash
 # compile and run demo
 ```
