@@ -1,0 +1,63 @@
+clang++-7 -I ../shared_memory_allocator -I ../common  -MMD exer.cpp -o exer
+In file included from exer.cpp:7:
+/usr/include/c++/v1/map:1474:5: error: static_assert failed due to requirement 'is_same<typename allocator_type::value_type, value_type>::value' "Allocator::value_type must be same type as value_type"
+    static_assert((is_same<typename allocator_type::value_type, value_type>::value),
+    ^              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+exer.cpp:29:9: note: in instantiation of template class 'std::__1::multimap<std::__1::shared_ptr<std::__1::basic_string<char> >, unsigned long, key_less, questrel::shared_memory_allocator<std::__1::shared_ptr<std::__1::basic_string<char> > > >' requested here
+typedef Map::iterator Miter;
+        ^
+exer.cpp:29:14: error: use of class template 'iterator' requires template arguments
+typedef Map::iterator Miter;
+             ^
+/usr/include/c++/v1/iterator:531:29: note: template is declared here
+struct _LIBCPP_TEMPLATE_VIS iterator
+                            ^
+exer.cpp:249:17: error: no matching constructor for initialization of 'Map' (aka 'multimap<shared_ptr<basic_string<char, char_traits<char>, allocator<char> > >, unsigned long, key_less, shared_memory_allocator<shared_ptr<basic_string<char, char_traits<char>, allocator<char> > > > >')
+        m = new (root) Map(a);
+                       ^   ~
+/usr/include/c++/v1/map:1461:28: note: candidate constructor (the implicit copy constructor) not viable: no known conversion from 'shared_memory_allocator<Map>' (aka 'shared_memory_allocator<multimap<shared_ptr<basic_string<char, char_traits<char>, allocator<char> > >, unsigned long, key_less, shared_memory_allocator<shared_ptr<basic_string<char, char_traits<char>, allocator<char> > > > > >') to 'const std::__1::multimap<std::__1::shared_ptr<std::__1::basic_string<char> >, unsigned long, key_less, questrel::shared_memory_allocator<std::__1::shared_ptr<std::__1::basic_string<char> > > >' for 1st argument
+class _LIBCPP_TEMPLATE_VIS multimap
+                           ^
+/usr/include/c++/v1/map:1461:28: note: candidate constructor (the implicit move constructor) not viable: no known conversion from 'shared_memory_allocator<Map>' (aka 'shared_memory_allocator<multimap<shared_ptr<basic_string<char, char_traits<char>, allocator<char> > >, unsigned long, key_less, shared_memory_allocator<shared_ptr<basic_string<char, char_traits<char>, allocator<char> > > > > >') to 'std::__1::multimap<std::__1::shared_ptr<std::__1::basic_string<char> >, unsigned long, key_less, questrel::shared_memory_allocator<std::__1::shared_ptr<std::__1::basic_string<char> > > >' for 1st argument
+/usr/include/c++/v1/map:1461:28: note: candidate constructor (the implicit default constructor) not viable: requires 0 arguments, but 1 was provided
+exer.cpp:252:10: error: no member named 'begin' in 'std::__1::multimap<std::__1::shared_ptr<std::__1::basic_string<char> >, unsigned long, key_less, questrel::shared_memory_allocator<std::__1::shared_ptr<std::__1::basic_string<char> > > >'
+        im = m->begin();
+             ~  ^
+exer.cpp:256:12: error: no member named 'insert' in 'std::__1::multimap<std::__1::shared_ptr<std::__1::basic_string<char> >, unsigned long, key_less, questrel::shared_memory_allocator<std::__1::shared_ptr<std::__1::basic_string<char> > > >'
+          im = m->insert(im, make_pair(shared_ptr<string>(p, d, ap), pos));
+               ~  ^
+exer.cpp:260:41: error: no member named 'size' in 'std::__1::multimap<std::__1::shared_ptr<std::__1::basic_string<char> >, unsigned long, key_less, questrel::shared_memory_allocator<std::__1::shared_ptr<std::__1::basic_string<char> > > >'
+      cout << "std::map: loaded " << m->size() << " in " << d << " milliseconds" << endl;
+                                     ~  ^
+exer.cpp:262:20: error: no member named 'begin' in 'std::__1::multimap<std::__1::shared_ptr<std::__1::basic_string<char> >, unsigned long, key_less, questrel::shared_memory_allocator<std::__1::shared_ptr<std::__1::basic_string<char> > > >'
+      for (im = m->begin(); im != m->end(); ++im);
+                ~  ^
+exer.cpp:262:38: error: no member named 'end' in 'std::__1::multimap<std::__1::shared_ptr<std::__1::basic_string<char> >, unsigned long, key_less, questrel::shared_memory_allocator<std::__1::shared_ptr<std::__1::basic_string<char> > > >'
+      for (im = m->begin(); im != m->end(); ++im);
+                                  ~  ^
+exer.cpp:264:43: error: no member named 'size' in 'std::__1::multimap<std::__1::shared_ptr<std::__1::basic_string<char> >, unsigned long, key_less, questrel::shared_memory_allocator<std::__1::shared_ptr<std::__1::basic_string<char> > > >'
+      cout << "std::map: traverse " << m->size() << " in " << d << " milliseconds" << endl;
+                                       ~  ^
+exer.cpp:275:20: error: no member named 'begin' in 'std::__1::multimap<std::__1::shared_ptr<std::__1::basic_string<char> >, unsigned long, key_less, questrel::shared_memory_allocator<std::__1::shared_ptr<std::__1::basic_string<char> > > >'
+      for (im = m->begin()/*, ix = x.begin()*/; im != m->end(); ++im/*, ++ix*/) {
+                ~  ^
+exer.cpp:275:58: error: no member named 'end' in 'std::__1::multimap<std::__1::shared_ptr<std::__1::basic_string<char> >, unsigned long, key_less, questrel::shared_memory_allocator<std::__1::shared_ptr<std::__1::basic_string<char> > > >'
+      for (im = m->begin()/*, ix = x.begin()*/; im != m->end(); ++im/*, ++ix*/) {
+                                                      ~  ^
+exer.cpp:290:27: error: member reference type 'Miter' (aka 'int') is not a pointer
+          v.push_back(im->first);
+                      ~~  ^
+exer.cpp:295:20: error: no member named 'count' in 'std::__1::multimap<std::__1::shared_ptr<std::__1::basic_string<char> >, unsigned long, key_less, questrel::shared_memory_allocator<std::__1::shared_ptr<std::__1::basic_string<char> > > >'
+        int c = m->count(*i);
+                ~  ^
+exer.cpp:322:16: error: no member named 'find' in 'std::__1::multimap<std::__1::shared_ptr<std::__1::basic_string<char> >, unsigned long, key_less, questrel::shared_memory_allocator<std::__1::shared_ptr<std::__1::basic_string<char> > > >'
+        if (m->find(*i) == m->end()) {
+            ~  ^
+exer.cpp:322:31: error: no member named 'end' in 'std::__1::multimap<std::__1::shared_ptr<std::__1::basic_string<char> >, unsigned long, key_less, questrel::shared_memory_allocator<std::__1::shared_ptr<std::__1::basic_string<char> > > >'
+        if (m->find(*i) == m->end()) {
+                           ~  ^
+exer.cpp:341:20: error: no member named 'count' in 'std::__1::multimap<std::__1::shared_ptr<std::__1::basic_string<char> >, unsigned long, key_less, questrel::shared_memory_allocator<std::__1::shared_ptr<std::__1::basic_string<char> > > >'
+        int c = m->count(*i);
+                ~  ^
+16 errors generated.
+make: *** [exer] Error 1

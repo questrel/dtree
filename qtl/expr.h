@@ -99,8 +99,7 @@ static auto const num_rule=x3::rule<struct num_rule, qtl::expr>{} =
                                   )
                                 )
                              )
-                          ),
-                          {}
+                          )
                 );
 		NOTRACE( std::cerr << "_val=" << _val(ctx) << "\n"; )
 	 }) ] ;
@@ -926,14 +925,14 @@ namespace qtl{
   	      if( !p ){ break; }
 	       std::cout << "result: " << result << '\n';
                std::cout << "stringify: " << result.stringify() << std::endl;
-               std::cout << "eval: " << result.eval({{"a",1},{"b",2},{"c",3}}) << std::endl;
+               std::cout << "eval: " << result.eval({{"a",(lex::number)1},{"b",(lex::number)2},{"c",(lex::number)3}}) << std::endl;
 	       auto b=result.bind({
 		   {"col1",expr(op::column,"1"s)},{"col2",expr(op::column,"2"s)},{"col3",expr(op::column,"3"s)},
 		 });
                if( b ){
 		 std::cout << "bind: " << ((expr)b) << std::endl;
 		 std::cout << "stringify: " << ((expr)b).stringify() << std::endl;
-                 std::cout << "eval: " << ((expr)b).eval({},{{1<=x::x<2,3},{}}) << std::endl;
+                 std::cout << "eval: " << ((expr)b).eval({},{{(lex::number)1<=x::x<(lex::number)2,(lex::number)3},{}}) << std::endl;
                }
 	    }
 	    if( b!=e ){

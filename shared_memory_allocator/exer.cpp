@@ -25,8 +25,7 @@ public:
   bool operator()(shared_ptr<string> const &x, shared_ptr<string> const &y) const { return character_set_t(dictorder).key_less(x->c_str(), y->c_str()); }
 };
 
-typedef multimap < shared_ptr<string>, pos_type, key_less,
-	shared_memory_allocator<multimap<shared_ptr<string>, pos_type>::value_type> > Map;
+typedef multimap < shared_ptr<string>, pos_type, key_less, shared_memory_allocator</*shared_ptr<string>*/ multimap<shared_ptr<string>, pos_type>::value_type> > Map;
 typedef Map::iterator Miter;
 
 typedef vector<Map::key_type> Vector;
@@ -241,6 +240,9 @@ void run(char cmd, const char *arg, istream &in = cin) {
 	m = a.get_root();
       } else { // file does not exist
 	shared_memory_allocator<Map> a(map_file_name_c_str);
+	shared_memory_allocator<shared_ptr<string>> ap(map_file_name_c_str);
+	shared_memory_allocator<string> as(map_file_name_c_str);
+	shared_memory_allocator<char> ac(map_file_name_c_str);
 	deleter_t<string> d;
 	Map *root = reinterpret_cast<Map*>(a.allocate(sizeof(Map)));
 	a.set_root(root);
@@ -249,9 +251,9 @@ void run(char cmd, const char *arg, istream &in = cin) {
 	string line;
 	im = m->begin();
 	for (pos_type pos; (pos = fin.tellg()), getline(fin, line); ) {
-	  string *p = new (a.allocate(sizeof(string))) string(a);
+	  string *p = new (as.allocate(sizeof(string))) string(ac);
 	  *p = line;
-	  im = m->insert(im, make_pair(shared_ptr<string>(p, d, a), pos));
+	  im = m->insert(im, make_pair(shared_ptr<string>(p, d, ap), pos));
 	}
       }
       d = milliseconds(clock() - start);
@@ -376,6 +378,7 @@ void prompt() {
 
 int main(int argc, char *argv[])
 {
+
   for (char c; (c = getopt(argc, argv, ":c:dki:l:o:pqs:t:v")) != -1;)
     switch (c) {
     case ':':

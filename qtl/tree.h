@@ -465,7 +465,7 @@ inline static const std::map<std::string,std::function<operand_t(const std::vect
     if( first ){ \
       first=false; \
     }else{ \
-      ret = std::n<V>()(ret,x);		\
+      ret = (lex::number)std::n<V>()(ret,x);		\
     } \
   } \
   return ret; \

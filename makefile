@@ -1,7 +1,7 @@
 CXX=g++
 CXX=clang++ 
 
-CXXFLAGS= -Xlinker -v -Xlinker -L/usr/local/opt/llvm/lib -fno-omit-frame-pointer -fno-optimize-sibling-calls 
+CXXFLAGS= -v -Xlinker -L/usr/local/opt/llvm/lib -fno-omit-frame-pointer -fno-optimize-sibling-calls -I ~/boost_1_70_0 
 #CXXFLAGS += -fsave-optimization-record -fprofile-instr-generate -fcoverage-mapping -ftest-coverage -fprofile-arcs
 # -fsanitize-memory-track-origins 
 # -fno-sanitize-address-use-after-scope

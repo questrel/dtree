@@ -3,8 +3,9 @@ draft documentation outline
 qtl = QuesTreL Template Library
 (meant to suggest an analogy with the Standard Template Library, std::)
 (The name of the STL is called std,
-but of course that's not what it really is)
-qtl is my own invention
+which of course isn't what it really is.
+And the qtl is my own invention)
+
 
 A qtl::container object is analogous to a std::container object
 where container is a string or scalar or vector<container> or tuple<container...>

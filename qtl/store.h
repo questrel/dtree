@@ -483,7 +483,7 @@ public:
        NOTRACE( std::cerr << "static_cast<lex::set<boundary_t>>(l)" << static_cast<std::set<boundary_t>>(ls) << '\n'; )
 	 parts p = static_cast<std::set<boundary_t>>(ls);
        NOTRACE( std::cerr << "(parts)" << p << '\n'; )
-	 *this={{},p};
+	 *this={(interval){},p};
        NOTRACE( std::cerr << __FUNCTION__ << "=" << *this  << '\n'; )
     }
     operator lex_t(){
@@ -1465,7 +1465,7 @@ template<typename R>
     using base_t::base_t;
     base_t *m;
 #if 1
-  lattice():lattice(__BASE_FILE__){}
+  lattice():lattice((std::string)__BASE_FILE__){}
   lattice(std::string file_name){
      NOTRACE(std::cerr << __PRETTY_FUNCTION__ << '(' << file_name << ")" << '\n';);
     const char *map_file_name_c_str = (file_name + ".map").c_str();
@@ -2625,7 +2625,7 @@ template<typename R>
       /**/NOTRACE(if(e.has_value()){ std::cerr << __PRETTY_FUNCTION__ << '(' << e.value().stringify() << ")\n"; })
      }
    lval(const expr &e)
-       : predicate({}, e)
+       : predicate((std::vector<lex::scalar>){}, e)
        , l(rp){
        //t=&trie;
      }
@@ -2818,7 +2818,7 @@ namespace qtl{
 
      lval(const requirements &p):base_t(&model::base,p){}
      lval(const row  &p):base_t(&model::base,{p,{}}){}
-     lval(const expr &p):base_t(&model::base,{{},p}){}
+     lval(const expr &p):base_t(&model::base,{(std::vector<lex::scalar>){},p}){}
      auto operator[](const store::optexpr &e){
        auto ret=*this;
        if( e && predicate().expr() ){
