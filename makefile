@@ -11,7 +11,7 @@ clang++_includepath:=$(CPLUS_INCLUDE_PATH)
 clang++_flags= -glldb --std=c++2a -fdebug-macro -fstandalone-debug -fsave-optimization-record -fprofile-instr-generate -fcoverage-mapping -fdiagnostics-show-template-tree
 g++_flags=--std=c++17
 g++-8_flags=--std=c++17
-CXXFLAGS+=$($(firstword $(CXX))_flags)
+CXXFLAGS+=$($(firstword $(CXX))_flags) -I ~/boost_1_70_0
 #CPLUS_INCLUDE_PATH=$($(firstword $(CXX))_includepath)
 #ifeq ($(CXX),clang++)
 #CXXFLAGS=--std=c++17 -include /usr/local/Cellar/llvm/6.0.0/lib/clang/6.0.0/include/emmintrin.h  -Xlinker -v -Xlinker -L/usr/local/opt/llvm/lib 

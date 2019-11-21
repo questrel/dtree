@@ -10,6 +10,7 @@ This may reduce portability of our output formats, though it has been tested und
 #### qtl/out.h
 ```c++
 //templates to print std::container<printable elements>
+
 qtl::ostream& operator<<(const container<object>& o); // invokes qtl::ostream << object
 qtl::ostream& operator<<(const tuple<object...>& o); //  invokes qtl::ostream << object...
 qtl::ostream& operator<<(const object&); // invokes std::stream << object or object.write(qtl::ostream&)
@@ -26,6 +27,7 @@ class qtl::string; // like std::string_view, can contain any std::string, mainta
 
 #### qtl/container.h
 ```c++
+
 template<typename T> class qtl::vector<T>;
 template<typename T...> class qtl::tuple<T...>;
 // stored in qtl::string with separators such that memcmp ordering is equivalent to std::lexicographical_compare
@@ -42,6 +44,7 @@ Would best practice be to keep lines short enough to not scroll?
 
 #### qtl/number.h
 ```c++
+
 class qtl::number; // contains values from std::is_arithmetic type or decfloat, stored in qtl::string with memcmp ordering
 // curently supports E−6176 to E+6144 range of IEEE decimal128, but is extensible with additional table entries
 // todo: explicitly define unlimited extension schema
@@ -54,6 +57,7 @@ class qtl::number; // contains values from std::is_arithmetic type or decfloat, 
 #### qtl/bool.h
 <!-- language: c++ --> 
 ```class qtl::kleen/*e*/; // True/False/Maybe logic``` [en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics](https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics)\
+
 ```//"e" is dropped from (Stephen) Kleene, as "e" is dropped from (George) Boole```\
 @emckean, is there a way to have both c++ syntax highlighting and links on the same line?
 
@@ -138,7 +142,7 @@ class qtl::interval; // interval arithmetic, with trinary logic comparisons
 // where x is a variable with a value that could be an interval,
 // which would evaluate to an interval representation of a kleen
 // whereas (x::x==0) is an interval
-   
+
 // (∞<x::x<∞) could also be described as a completely unknown value, so it could be
 // semantically confusing that Unknown is also True.
 // (which is part of why I called the third logic value Maybe instead of Unknown)
@@ -156,6 +160,7 @@ class qtl::interval; // interval arithmetic, with trinary logic comparisons
 // When there is an ambiguity which way to wrap, intervals not containing the projective infinity, or smaller intervals are prefered
 // Predicates satisfied by multiple disjoint intervals can stil be described by expressions containing && and ||
 // without need of having a fundamental object that represents multiple disjoint intervals.
+
 // Although sin(a) < 0 may have to return Maybe when a spans a large interval,
 // we can still resolve it to True or False as a gets sufficiently refined.
 
@@ -179,7 +184,7 @@ class qtl::interval; // interval arithmetic, with trinary logic comparisons
 ```c++
 // generic expression trees with branches of 
 qtl::optree(Operator,vector<Operands>);
-
+with branches of
 using qtl::expr=optree<interval,vector<interval>>;
 #define op(O) qtl::expr operator O(const qtl::expr& left, const qtl::expr& right);
 op(+) op(-) op(*) op(/) op(<) op(<=) op (==) op(!=) op(>=) op(>) op(&&) op(||) ...
@@ -199,7 +204,7 @@ auto result = e.recurse<function>(Args); // descend tree, recursively performing
 
 #### qtl/operators.h
 ```c++
-// table of operators and precedence hierarchy used by tree.h
+// table of operators and precedence hierarchy used by tree.h 
 ```
 
 #### qtl/expr.h
@@ -210,7 +215,6 @@ auto p=boost:spirit::x3::phrase_parse( string.begin(),string.end(), qtl::expr_ru
 // <http://charette.no-ip.com:81/programming/doxygen/boost/namespaceboost_1_1spirit_1_1x3.html#a7872ffa13c602499eb94ae6d611f738a>
 // todo: expr operator""_expr(const char *c,std::size_t s);
 // todo: expr(char*);
-// todo: generate parse rules from operators.h
 ```
 
 ### qtl/store.h

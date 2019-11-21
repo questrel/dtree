@@ -376,7 +376,6 @@ void prompt() {
 
 int main(int argc, char *argv[])
 {
-
   for (char c; (c = getopt(argc, argv, ":c:dki:l:o:pqs:t:v")) != -1;)
     switch (c) {
     case ':':
