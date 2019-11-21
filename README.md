@@ -295,6 +295,11 @@ from which I leared that it had been previously invented a decade earlier.
 //#define TEST_H "qtl/module.h"
 #include TEST_H
 ```
+### test.bash
+```bash
+# compile and run demo
+```
+
 [see also](doc)
 
 ## Installation Instructions
