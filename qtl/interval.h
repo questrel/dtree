@@ -343,29 +343,20 @@ namespace lex{
   interval(const qtl::basic_interval<S> &i):base_t(static_cast<typename qtl::boundary<S>::lex_t>(i.l()),static_cast<typename qtl::boundary<S>::lex_t>(i.u())){
       NOTRACE( std::cerr << __PRETTY_FUNCTION__ << "(" << i << ")" << '\n'; )
       NOTRACE( std::cerr << "=" << *this << '\n'; )
-  }
-#if 0
-    operator qtl::basic_interval<S>(){
-      NOTRACE( std::cerr << __PRETTY_FUNCTION__ << '\n'; )
-      std::tuple<typename qtl::boundary<S>::lex_t,typename qtl::boundary<S>::lex_t> st=*this;
-      qtl::basic_interval<S> ret{static_cast<qtl::boundary<S>>(std::get<0>(st)),static_cast<qtl::boundary<S>>(std::get<1>(st))};
-      NOTRACE( std::cerr << "=" << ret << '\n'; )
-      return ret;
-    }  
-#endif
-  };
+    }
+  }; // end class interval
 }; // end class lex
 namespace qtl{
-  template<typename S/*=lex::number*/ ,  typename /*= std::enable_if_t<std::is_base_of_v<lex::string,S>||std::is_same_v<lex::number,S>>*/ >
+   template<typename S/*=lex::number*/ ,  typename /*= std::enable_if_t<std::is_base_of_v<lex::string,S>||std::is_same_v<lex::number,S>>*/ >
     //  class basic_interval:public std::pair<boundary<S>,boundary<S>>{
-  class basic_interval:public std::array<boundary<S>,2>{
-  public:
-  typedef boundary<S> b_t;
-  //typedef std::pair<b_t,b_t> base_t;
-  typedef std::array<b_t,2> base_t;
-  base_t base_v()const{
-    return *(base_t*)this;
-  }
+   class basic_interval:public std::array<boundary<S>,2>{
+   public:
+   typedef boundary<S> b_t;
+   //typedef std::pair<b_t,b_t> base_t;
+   typedef std::array<b_t,2> base_t;
+   base_t base_v()const{
+     return *(base_t*)this;
+   }
     using base_t::base_t;
     std::
   //    #if (defined __clang__)
@@ -389,7 +380,8 @@ namespace qtl{
     }
   bool is_inf()const{ return l().value().is_inf() && u().value().is_inf(); }
   bool is_point()const{ return l().value()==u().value() && !l().value().is_null() && l().ma() < u().ma(); }
-  bool is_point(const S &v)const{ return l().value()==v && u().value()==v && l().ma() < u().ma(); }
+  template<typename T>
+  bool is_point(const T &v)const{ return l().value()==v && u().value()==v && l().ma() < u().ma(); }
   bool is_null()const{ return l().value().is_null() || u().value().is_null(); }
   bool is_connected()const{ return l()<=u() ; }
   bool is_empty()const{ return l()==u() && !l().is_pole(); }
@@ -414,8 +406,8 @@ namespace qtl{
 	*this=nullptr;
       }
       if( k==kleen::F ){
-        u().value()=(lex::number)0;
-        l().value()=(lex::number)0;
+        u().value()=(S)0;
+        l().value()=(S)0;
       }
       if( k!=kleen::T ){
       }
@@ -513,11 +505,12 @@ namespace qtl{
 <  <= == >=  > !=   < = >
 T  T  F  F  F  T    T F F   0 <=> 1
 F  T  T  T  F  F    F T F   0 <=> 0
-F  F  F  T  T  T    F F T   1 <=> 0
+F  F  F  T  T  T    F F T   0 <=> -1
 U  T  U  U  F  U    U U F   0 <=> (0<=x::x<=1)
-U  U  F  U  U  T    U F U   (x::x!=0) <=> (x::x==0)
-F  U  U	 T  U  U    F U U   (0<=x::x<=1) <=> 0
-U  U  U  U  U  U    U U U   (0<=x::x<=1) <=> (0<=x::x<=1)
+U  U  F  U  U  T    U F U   0 <=> (x::x!=0)
+F  U  U  T  U  U    F U U   0 <=> (-1<=x::x<=0)
+U  U  U  U  U  U    U U U   0 <=> (-1<=x::x<=1)
+
 */
 }; // end class partial_ordering
 #endif
@@ -808,7 +801,7 @@ bool contains0()const{
           return basic_interval(); \
          } \
      }									\
-     if( 0 o 1 == 0 && a.is_point((lex::number)0) ){ return basic_interval((lex::number)0,infi,(lex::number)0,supre); } \
+     if( 0 o 1 == 0 && a.is_point(0) ){ return basic_interval(0); } \
      int x=(sign)a.l()+(sign)a.u(); \
      int y=(sign)b.l()+(sign)b.u(); \
      if( y==0 && x==0 ){ \
@@ -883,7 +876,7 @@ bool contains0()const{
 	  return {b.l(),a.u()};
         }
       //	return  {{0,infi},{0,infi}};
-      return  {b_t((lex::number)0,infi),b_t((lex::number)0,infi)};
+      return  {b_t((S)0,infi),b_t((S)0,infi)};
     };
 
     NOTRACE( std::cerr << __PRETTY_FUNCTION__ << '\n'; )
@@ -899,7 +892,7 @@ bool contains0()const{
           return {lb,ub};
         }else{
 	  NOTRACE( std::cerr << __LINE__ << '\n'; )
-	     return {b_t((lex::number)0,infi),b_t((lex::number)0,infi)}; 
+	    return {b_t(0,infi),b_t(0,infi)}; 
         }
       }else{ 
 	return cp(*this,b);
@@ -1078,21 +1071,21 @@ bool contains0()const{
     case 0:{ if( l().ma()<(sign)0 ){ NOTRACE( std::cerr << "return l()=" << l().value() << '\n'; ) return l().value(); } };break;
     case 5:{ if( (sign)0<u().ma() ){ NOTRACE( std::cerr << "return u()=" << u().value() << '\n'; ) return u().value(); } };break;
      };
-       return (S)(lex::number)d2(l().value(),u().value());
+    return (S)(lex::number)d2((S)l().value(),(S)u().value());
    }
   
     static basic_interval abs(const basic_interval &a){
-      if( a.l() < (lex::number)0 && (lex::number)0 < a.u() ){
+      if( a.l() < (S)0 && (S)0 < a.u() ){
 	//        return {{0,infi},{max(-a.l(),a.u())}};
-	return {b_t((lex::number)0,infi),b_t(max(-a.l(),a.u()))};
+	return {b_t((S)0,infi),b_t(max(-a.l(),a.u()))};
       }
-      if( a.u()<(lex::number)0 && (lex::number)0 < a.l() ){
+      if( a.u()<(S)0 && (S)0 < a.l() ){
 	NOTRACE( std::cerr << min(-a.u(),a.l()) << '\n'; )
 	NOTRACE( std::cerr << basic_interval({min(-a.u(),a.l())},{lex::string,infi}) << '\n'; )
 	//	return {{min(-a.u(),a.l())},{}};
 	return {b_t(min(-a.u(),a.l())),b_t()};
       }
-      if( (lex::number)0 <= a.l() && (lex::number)0 <= a.u() ){
+      if( (S)0 <= a.l() && (S)0 <= a.u() ){
 	return a;
       }
       /*if( a.l()<=0  &&  a.u()<=0 )*/{
@@ -1171,7 +1164,7 @@ template<typename T=lex::scalar>
   at_( [this](int x){return (*I)[x];} ),
   put_([this](std::ostream& s)->std::ostream&{  s<<(*I); return s;} )
   {
-            NOTRACE( std::cerr << __PRETTY_FUNCTION__ << '(' << i << ')' << '\n'; )
+            NOTRACE( qtl::cerr << __PRETTY_FUNCTION__ << '(' << i << ')' << '\n'; )
   }
  intvec(const std::vector< T>&s):S(&s),
  size_( [this](){return S->size();} ),
@@ -1500,7 +1493,7 @@ std::cout <<  qtl::setverbose(qtl::ios_base::fmtflags::none|qtl::ios_base::fmtfl
 #if 1
   //  std::cout << std::dec << std::plus<qtl::interval>()(qtl::interval(1,2),qtl::interval(3,5)) << std::endl;
   std::cout << qtl::setverbose(qtl::ios_base::fmtflags::none);
-  std::cout << std::dec << qtl::interval((lex::number)1,(lex::number)2) + qtl::interval((lex::number)3,(lex::number)5) << '\n';
+  std::cout << std::dec << qtl::interval(1_s,2_s) + qtl::interval(3_s,5_s) << '\n';
   std::cout << std::dec << (1 <= x::x < 2) + (3 <= x::x < 5) << '\b';
 #endif
 #if 0

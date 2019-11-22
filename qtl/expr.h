@@ -903,10 +903,12 @@ static auto const or_rule=expr_rule_t{}=
 #if __INCLUDE_LEVEL__ + !defined __INCLUDE_LEVEL__ < 1+defined TEST_H
 #include "bounds.h"
 namespace qtl{
+
  void parse_test(const std::string &s){
      //        std::tuple<std::string,int> result;
      //     boost::fusion::deque<double, int> result;
 	     //	   TRACE( std::cerr << "type(atom_rule)=" <<   qtl::type_name<decltype(atom_rule)>() << "\n"; )
+   using namespace lex::literals;
 	   qtl::expr result;
 	  try{
 	    auto b=s.begin();
@@ -925,14 +927,14 @@ namespace qtl{
   	      if( !p ){ break; }
 	       std::cout << "result: " << result << '\n';
                std::cout << "stringify: " << result.stringify() << std::endl;
-               std::cout << "eval: " << result.eval({{"a",(lex::number)1},{"b",(lex::number)2},{"c",(lex::number)3}}) << std::endl;
+               std::cout << "eval: " << result.eval({{"a",1_s},{"b",2_s},{"c",3_s}}) << std::endl;
 	       auto b=result.bind({
-		   {"col1",expr(op::column,"1"s)},{"col2",expr(op::column,"2"s)},{"col3",expr(op::column,"3"s)},
+		   {"col1",1_column},{"col2",1_column},{"col3",3_column},
 		 });
                if( b ){
 		 std::cout << "bind: " << ((expr)b) << std::endl;
 		 std::cout << "stringify: " << ((expr)b).stringify() << std::endl;
-                 std::cout << "eval: " << ((expr)b).eval({},{{(lex::number)1<=x::x<(lex::number)2,(lex::number)3},{}}) << std::endl;
+                 std::cout << "eval: " << ((expr)b).eval({},{{1_s<=x::x<2_s,3_s},{}}) << std::endl;
                }
 	    }
 	    if( b!=e ){
