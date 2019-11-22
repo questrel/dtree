@@ -367,7 +367,7 @@ operand_t  make_interval(const operand_t &a, const operand_t &b){
 #define X02(n,o) T(n,o, NOTRACE( std::cerr << __PRETTY_FUNCTION__  << " X02\n"; ) return n()((operand_t)(v[0]),(operand_t)(v[1])); )
 #define X002(n,o)  T(n,o, NOTRACE( std::cerr << __PRETTY_FUNCTION__  << " X002\n"; )  \
   /*return operation::nary((V)n ## _identity,&std::n<operand_t>::operator(),v ); */ \
-  V ret=n ## _identity; \
+     V ret=(operand_t)n ## _identity;			\
   bool first=true; \
   for( auto x:v ){ \
     ret = first?x:std::n()(ret,x);		\
@@ -457,7 +457,7 @@ inline static const std::map<std::string,std::function<operand_t(const std::vect
 #define Xright2(n,o)  Xin2(n,o)
 #define Xleft_(n,o)  T(n,o, NOTRACE( std::cerr << __PRETTY_FUNCTION__  <<'\n'; )  \
   if( v.size()==0 ){ \
-    return n ## _identity; \
+    return (operand_t)n ## _identity;			\
   } \
   V ret=v[0]; \
   bool first=true; \
@@ -465,7 +465,7 @@ inline static const std::map<std::string,std::function<operand_t(const std::vect
     if( first ){ \
       first=false; \
     }else{ \
-      ret = (lex::number)std::n<V>()(ret,x);		\
+      ret = (operand_t)std::n<V>()(ret,x);		\
     } \
   } \
   return ret; \
@@ -477,7 +477,7 @@ inline static const std::map<std::string,std::function<operand_t(const std::vect
 #define X(n,a,o,f,p) X ## f(n,o)
 #if 0
 template<typename Vec=std::vector<operand_t>> static inline operand_t eval_multiplies(const operation &t,const Vec &v){
-    V ret=multiplies_identity; 
+  V ret=(operand_t)multiplies_identity; 
     bool first=true;
     for( auto x:v ){
       ret = first?x:std::multiplies()(ret,x);
