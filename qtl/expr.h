@@ -929,7 +929,7 @@ namespace qtl{
                std::cout << "stringify: " << result.stringify() << std::endl;
                std::cout << "eval: " << result.eval({{"a",1_s},{"b",2_s},{"c",3_s}}) << std::endl;
 	       auto b=result.bind({
-		   {"col1",expr(op::column,"1"s)},{"col2",expr(op::column,"2"s)},{"col3",expr(op::column,"3"s)},
+		   {"col1",1_column},{"col2",1_column},{"col3",3_column},
 		 });
                if( b ){
 		 std::cout << "bind: " << ((expr)b) << std::endl;
