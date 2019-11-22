@@ -929,7 +929,7 @@ TABLE_CMP
    using base_t::base_t;
    //   std::optional<lex::number> num;
    template<typename T,typename = std::enable_if_t<std::is_scalar<T>::value>>
-   scalar(T t):base_t(t){}
+   scalar(const T &t):base_t(t){}
    scalar(const lex::number &s):base_t(s){}
    scalar(const char *s):base_t(std::string(s)){}
    scalar(const std::string &s):base_t(lex::raw(lex::string(s))){}

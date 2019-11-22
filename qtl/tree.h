@@ -457,7 +457,7 @@ inline static const std::map<std::string,std::function<operand_t(const std::vect
 #define Xright2(n,o)  Xin2(n,o)
 #define Xleft_(n,o)  T(n,o, NOTRACE( std::cerr << __PRETTY_FUNCTION__  <<'\n'; )  \
   if( v.size()==0 ){ \
-    return (operand_t)n ## _identity;			\
+    return operand_t(n ## _identity);		\
   } \
   V ret=v[0]; \
   bool first=true; \

@@ -343,29 +343,20 @@ namespace lex{
   interval(const qtl::basic_interval<S> &i):base_t(static_cast<typename qtl::boundary<S>::lex_t>(i.l()),static_cast<typename qtl::boundary<S>::lex_t>(i.u())){
       NOTRACE( std::cerr << __PRETTY_FUNCTION__ << "(" << i << ")" << '\n'; )
       NOTRACE( std::cerr << "=" << *this << '\n'; )
-  }
-#if 0
-    operator qtl::basic_interval<S>(){
-      NOTRACE( std::cerr << __PRETTY_FUNCTION__ << '\n'; )
-      std::tuple<typename qtl::boundary<S>::lex_t,typename qtl::boundary<S>::lex_t> st=*this;
-      qtl::basic_interval<S> ret{static_cast<qtl::boundary<S>>(std::get<0>(st)),static_cast<qtl::boundary<S>>(std::get<1>(st))};
-      NOTRACE( std::cerr << "=" << ret << '\n'; )
-      return ret;
-    }  
-#endif
-  };
+    }
+  }; // end class interval
 }; // end class lex
 namespace qtl{
-  template<typename S/*=lex::number*/ ,  typename /*= std::enable_if_t<std::is_base_of_v<lex::string,S>||std::is_same_v<lex::number,S>>*/ >
+   template<typename S/*=lex::number*/ ,  typename /*= std::enable_if_t<std::is_base_of_v<lex::string,S>||std::is_same_v<lex::number,S>>*/ >
     //  class basic_interval:public std::pair<boundary<S>,boundary<S>>{
-  class basic_interval:public std::array<boundary<S>,2>{
-  public:
-  typedef boundary<S> b_t;
-  //typedef std::pair<b_t,b_t> base_t;
-  typedef std::array<b_t,2> base_t;
-  base_t base_v()const{
-    return *(base_t*)this;
-  }
+   class basic_interval:public std::array<boundary<S>,2>{
+   public:
+   typedef boundary<S> b_t;
+   //typedef std::pair<b_t,b_t> base_t;
+   typedef std::array<b_t,2> base_t;
+   base_t base_v()const{
+     return *(base_t*)this;
+   }
     using base_t::base_t;
     std::
   //    #if (defined __clang__)
@@ -389,7 +380,8 @@ namespace qtl{
     }
   bool is_inf()const{ return l().value().is_inf() && u().value().is_inf(); }
   bool is_point()const{ return l().value()==u().value() && !l().value().is_null() && l().ma() < u().ma(); }
-  bool is_point(const S &v)const{ return l().value()==v && u().value()==v && l().ma() < u().ma(); }
+  template<typename T>
+  bool is_point(const T &v)const{ return l().value()==v && u().value()==v && l().ma() < u().ma(); }
   bool is_null()const{ return l().value().is_null() || u().value().is_null(); }
   bool is_connected()const{ return l()<=u() ; }
   bool is_empty()const{ return l()==u() && !l().is_pole(); }
@@ -809,7 +801,7 @@ bool contains0()const{
           return basic_interval(); \
          } \
      }									\
-     if( 0 o 1 == 0 && a.is_point((S)0) ){ return basic_interval((S)0,infi,(S)0,supre); } \
+     if( 0 o 1 == 0 && a.is_point(0) ){ return basic_interval(0); } \
      int x=(sign)a.l()+(sign)a.u(); \
      int y=(sign)b.l()+(sign)b.u(); \
      if( y==0 && x==0 ){ \
@@ -900,7 +892,7 @@ bool contains0()const{
           return {lb,ub};
         }else{
 	  NOTRACE( std::cerr << __LINE__ << '\n'; )
-	     return {b_t((S)0,infi),b_t((S)0,infi)}; 
+	    return {b_t(0,infi),b_t(0,infi)}; 
         }
       }else{ 
 	return cp(*this,b);
