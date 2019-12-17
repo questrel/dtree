@@ -1455,7 +1455,8 @@ template<typename R>
     }; // end class section::iterator
   }; // end class section
 
-#define BASE_T std::map<path, std::shared_ptr<vertex>,path::lexicographical_less,questrel::shared_memory_allocator<std::map<path,std::shared_ptr<vertex>>::value_type>>
+  //#define BASE_T std::map<path, std::shared_ptr<vertex>,path::lexicographical_less,questrel::shared_memory_allocator<std::map<path,std::shared_ptr<vertex>>::value_type>>
+#define BASE_T std::map<path, std::shared_ptr<vertex>, path::lexicographical_less>
   class lattice : public BASE_T {
     using base_t = BASE_T;
 #undef BASE_T
@@ -1468,6 +1469,7 @@ template<typename R>
   lattice():lattice((std::string)__BASE_FILE__){}
   lattice(std::string file_name){
      NOTRACE(std::cerr << __PRETTY_FUNCTION__ << '(' << file_name << ")" << '\n';);
+#if 0
     const char *map_file_name_c_str = (file_name + ".map").c_str();
     if (access(map_file_name_c_str, F_OK) == 0) { // file already exists
       questrel::shared_memory_allocator<base_t> a(map_file_name_c_str);
@@ -1491,7 +1493,8 @@ template<typename R>
 	for( auto x:*m ){
 	     std::cerr << '{' << x.first << ", " << x.second  << "}" << '\n';
 	}
-
+#endif
+	m=&root;
   }
 #endif
 
