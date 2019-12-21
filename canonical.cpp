@@ -11,7 +11,7 @@ using namespace std;
 char usage[] =
 " [-C(SV)]"
 " [-S(QL)]"
-" [-v(erbose)]"
+" [-v(erbose)] (output column names before outputting column values)"
 " [file]";
 
 bool CSV = false;
@@ -448,6 +448,23 @@ int main(int argc, char *argv[]) {
     exit(2);
   }
   init_tables();
+  if (verbose) {
+    const char *sep = "";
+    if (SQL)
+      cout << "create table word (";
+    for (auto l : lookup) {
+      if (CSV)
+	cout << sep << "\"" << l.type << "\"";
+      else if (SQL)
+	cout << sep << l.type << (l.is_numeric ? " double" : " varchar(255)");
+      else 
+	cout << sep << l.type;
+      sep = ",";
+    }
+    if (SQL)
+      cout << ")";
+    cout << endl;
+  }
   for (string line; getline(in, line); ) {
 
     if (CSV)
@@ -471,9 +488,7 @@ int main(int argc, char *argv[]) {
 	  cout << "," << a.work;
 	else
 	  cout << ",'" << escape(a.work, "\\,'") << "'";
-      } else if (verbose)
-        cout << '\t' << l.type << "=" << a.work;
-      else
+      } else
         cout << '\t' << a.work;
       free(a.work);
     }
