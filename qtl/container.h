@@ -816,7 +816,7 @@ if( argc!=1 && argv[1][0] != '<' ){
 #if 1
   lex::tuple<lex::string,lex::string> tp("123"s,"a\0c"s);
   //std::cout << __LINE__ << '\n';
-  std::cout << std::tuple<std::string,std::string>{"std"s,"string"s} << '\n';
+  qtl::cout << std::tuple<std::string,std::string>{"std"s,"string"s} << '\n';
   //std::cout << __LINE__ << '\n';
 #endif
   // lex::tuple<decltype(t),lex::string,decltype(t)> tt(t,"X\0Z"s,t);

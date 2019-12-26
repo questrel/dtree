@@ -594,7 +594,7 @@ static inline ps stri_name(const operation &o, const std::string &s,const Vp &v)
 template<typename Vp=vec<ps>>
 static inline ps stri_column(const operation &o, const std::string &s,const Vp &v){
   //  return ps( s+"."+ *o.identifier,o.precedence());
-  return ps( *o.identifier + "_" + s,o.precedence());
+  return ps( *o.identifier + "_column",o.precedence());
 }
 template<typename Vp=std::vector<ps>>
 static inline ps stri_func(const operation &o,const std::string& s,const Vp &v){
@@ -837,6 +837,7 @@ class optree:public BASE_T{
    }
    base_t::branches=b;
  }
+ optree( const V &v ):optree( op::lit, v){}
  std::string stringify()const{
    return base_t::template recurse<struct OP::ps>(&OP::stringify);
   }

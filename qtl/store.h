@@ -2184,7 +2184,7 @@ template<typename R>
 	    }
         }
 	assert( it()!=it().end() ); 
-	TRACE( std::cout << it() << '\n'; )
+	NOTRACE( std::cout << it() << '\n'; )
 	if( (path() , *it()).satisfies(stack().req0()) != kleen::T){
           fail.push_back(*it());
 	  NOTRACE( std::cerr<<"fail(" << *it() << ")\n"; )

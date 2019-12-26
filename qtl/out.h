@@ -10,6 +10,7 @@
 #include <iostream>
 #include <sstream>
 #include <type_traits>
+#include <experimental/type_traits> // is_detected_v
 //#include <boost/core/demangle.hpp>
 //#include <boost/type_index.hpp>
 #include <boost/io/ios_state.hpp>
@@ -64,6 +65,12 @@ namespace detail{
 #endif
 #define NOWARN(x)
 namespace qtl{
+
+  // template<typename B/*=std::ostream*/>
+  class basic_ostream;
+  using ostream=basic_ostream/*<std::ostream>*/;
+  class ostringstream;
+  
   template<typename S> struct rstr{};
   template<>
   struct rstr<std::string>:public std::string{
@@ -213,6 +220,7 @@ constexpr conststr last(conststr s, char c=']'){
  
 template<class C> 
 rstr<std::string> type_name(ios_base::fmtflags::type verbosity=ios_base::fmtflags::demangle,std::string generic=""){
+  NOTRACE( std::cout << __PRETTY_FUNCTION__ << '\n'; )
     using type=ios_base::fmtflags;
     if( verbosity&type::namefield ){
 #if 0
@@ -358,6 +366,7 @@ rstr<std::string> type_name(ios_base::fmtflags::type verbosity=ios_base::fmtflag
   class _pop{
   };
   _pop pop(){ return {}; }
+#if 0 // class ostringstream
   //  template<typename T, typename=std::enable_if_t<std::is_same_v<T,std::ostream>>>class ostream:public T{
   class ostringstream:public std::ostringstream{
     public:
@@ -365,7 +374,17 @@ rstr<std::string> type_name(ios_base::fmtflags::type verbosity=ios_base::fmtflag
     ostringstream(){
       NOTRACE( std::cout << __PRETTY_FUNCTION__ << (void*) this << '\n'; )
     }
-    // using base_t:base_t;
+    using base_t::base_t;
+#if 0
+    template<typename T>
+      using qtl_ostream_left_shift_t = decltype( std::declval<qtl::ostream>() << std::declval<const T&>() );
+    template <typename T,
+      typename D= std::enable_if_t<std::experimental::is_detected_v<qtl_ostream_left_shift_t,T>>
+    >
+    ostringstream& operator<<(const T &t){
+       
+    }
+#endif
     ~ostringstream(){
       NOTRACE( std::cout << __PRETTY_FUNCTION__ << (void*) this << '\n'; )
       if( auto p=this->pword(qtl::ios_base::xfmt);p ){
@@ -374,17 +393,21 @@ rstr<std::string> type_name(ios_base::fmtflags::type verbosity=ios_base::fmtflag
 	    this->pword(qtl::ios_base::xfmt) = 0;
       };
     }
-  };
-  
+  }; // end class ostringstream
+#endif
+ 
+
 }//end namesspace qtl
 
 //static out s;
+#if 0
 qtl::ostringstream& operator<<(qtl::ostringstream& os,const std::string&s){
   using namespace qtl;
   static_cast<qtl::ostringstream::base_t&>(os) << qtl::visible(s) << "s"_r;
     return os;
 }
-#if 1
+#endif
+#if 0
 qtl::ostringstream& operator<<(qtl::ostringstream& os,const std::string_view&s){
   using namespace qtl;
   //  qtl::ios_base::fmtflags f;
@@ -402,6 +425,7 @@ qtl::ostringstream& operator<<(qtl::ostringstream& os,const std::string_view&s){
     return os;
 }
 #endif
+#if 0
 qtl::ostringstream& operator<<(qtl::ostringstream& os,char c){
   static_cast<qtl::ostringstream::base_t&>(os) << qtl::visible(c);
   return os;
@@ -414,7 +438,8 @@ qtl::ostringstream& operator<<(qtl::ostringstream& os,char const *s){
   static_cast<qtl::ostringstream::base_t&>(os) << qtl::visible(s);
   return os;
 }
-#if 1
+#endif
+#if 0
 #if 0
 template<typename T> // clang++: error: call to function 'operator<<' that is neither visible in the template definition nor found by argument-dependent lookup
 qtl::ostringstream& operator<<(qtl::ostringstream& os,T i){ 
@@ -439,14 +464,14 @@ qtl::ostringstream& operator<<(qtl::ostringstream& os,long long i){
 //  error: use of overloaded operator '<<' is ambiguous (with operand types 'qtl::ostringstream' and 'int')
 #endif
 
-#if 1
+#if 0
 template<typename S>
 qtl::ostringstream& operator<<(qtl::ostringstream& os,const qtl::rstr<S>s){
   static_cast<qtl::ostringstream::base_t&>(os) << static_cast<S>(s);
   return os;
 }
 #endif
-#if 1
+#if 0
 template<typename S>
 std::ostream& operator<<(std::ostream& os,const qtl::rstr<S>s){
   os << static_cast<S>(s);
@@ -526,13 +551,13 @@ std::ostream& operator<<(std::ostream& os,const qtl::type<T> &t){
   return os;
 }
 //
-#if 1 // os << std::pair
+#if 0 // os << std::pair
 #ifdef __clang__
 //template<class T1, class T2>
 //    std::pair(T1, T2) -> std::pair<T1, T2>;
 #endif
-template <class T0, class T1>
-std::ostream& operator<<(std::ostream& os, const std::pair<T0,T1>& obj){
+//template <typename S=std::ostream, class T0, class T1>
+qtl::basic_ostream& operator<<(qtl::basic_ostream& os, const std::pair<T0,T1>& obj){
   // os << boost::core::demangle(typeid(obj).name()) ;
   using namespace qtl;
   qtl::ios_base::fmtflags f;
@@ -589,66 +614,57 @@ namespace detail {
     decltype(std::declval<T&>()[std::declval<const typename T::key_type&>()])>>
     : std::true_type { };
 }
-
 template<typename T>
 struct is_mappish : detail::is_mappish_impl<T>::type { };
 #endif
 
 //namespace qtl{//
-
-template <class T,
-  typename = std::enable_if_t<!std::is_same_v<char,T> && !std::is_convertible_v<T, std::string>  && ! std::is_pointer_v<T> && !std::is_same_v<std::string_view,T> > // ok
-    ,typename =typename T::iterator
+#define _TEMPLATE_OPERATOR_SHIFT_CONTAINER_(_FRIEND_)	\
+template <class T, \
+  typename = std::enable_if_t<!std::is_same_v<char,T> && !std::is_convertible_v<T, std::string>  && ! std::is_pointer_v<T> && !std::is_same_v<std::string_view,T> > \
+    ,typename =typename T::iterator >\
+_FRIEND_ std::ostream& operator<<(std::ostream& os, const T& obj){ \
+  NOTRACE( std::cout << __PRETTY_FUNCTION__ <<  has_mapped_type<T>::value << '\n'<<std::flush; ) \
+  NOTRACE( std::cout << __PRETTY_FUNCTION__ << " is_mappish: " <<  is_mappish<T>{} << '\n'; ) \
+  qtl::ios_base::fmtflags f; \
+  using namespace qtl::literals; \
+  os >> f; \
+  os << qtl::type_name<decltype(obj)>(f.verbosity); \
+  os << "{"_r; \
+    auto qs=qtl::ostringstream(); \
+  qs<<f; \
+  if( f.verbosity>=qtl::ios_base::fmtflags::id ){ \
+      qs << qtl::setverbose(qtl::ios_base::fmtflags::generic); \
+  } \
+   if constexpr ( is_mappish<T>{} ){ \
+      qs << f.rs; \
+      qtl::rstr<std::string> indent= std::string((f.indent+1)*2,' '); \
+      for( auto [k,v]:obj ){ \
+	if constexpr ( std::is_pointer_v<decltype(v)> ){ \
+	    qs << indent << "{"_r << k << ", /*"_r << v << "*/"_r; \
+	    if( v ){ qs << *v; } \
+            qs << "},"_r << f.rs; \
+	}else{ \
+	    qs << indent << "{"_r << k << ", "_r << v << "},"_r << f.rs; \
+	} \
+      } \
+    }else{ \
+      bool next=false; \
+      for( auto i:obj ){ \
+        if( next ){ qs << f.fs; } \
+	qs << i; \
+        next=true; \
+      } \
+  } \
+  os << qtl::rstr(qs.str()); \
+  os << "}"_r; \
+  return os; \
+} \
+// end define 
+#undef _TEMPLATE_OPERATOR_SHIFT_CONTAINER_
+#define _TEMPLATE_OPERATOR_SHIFT_CONTAINER_(x)
+_TEMPLATE_OPERATOR_SHIFT_CONTAINER_()
 #if 0
-  ,class O, typename=std::enable_if_t<std::is_base_of_v<std::ostream,O>|std::is_same_v<O&,std::ostream&>>
->
-static  std::ostream& operator<<(O& os, const T& obj)
-#else
->
-static  std::ostream& operator<<(std::ostream& os, const T& obj)
-#endif
-{
-  NOTRACE( std::cout << __PRETTY_FUNCTION__ <<  has_mapped_type<T>::value << '\n'<<std::flush; )
-  NOTRACE( std::cout << __PRETTY_FUNCTION__ << " is_mappish: " <<  is_mappish<T>{} << '\n';;) 
-  qtl::ios_base::fmtflags f;
-  using namespace qtl::literals;
-  os >> f;
-  os << qtl::type_name<decltype(obj)>(f.verbosity);
-  os << "{"_r;
-    auto qs=qtl::ostringstream();
-  qs<<f;
-  //  auto sep=f.fs;
-  if( f.verbosity>=qtl::ios_base::fmtflags::id ){
-      qs << qtl::setverbose(qtl::ios_base::fmtflags::generic);
-  }
-  //  if constexpr ( has_mapped_type<T>::value ){
-   if constexpr ( is_mappish<T>{} ){
-      qs << f.rs;
-      qtl::rstr<std::string> indent= std::string((f.indent+1)*2,' ');
-      for( auto [k,v]:obj ){
-	if constexpr ( std::is_pointer_v<decltype(v)> ){
-	    qs << indent << "{"_r << k << ", /*"_r << v << "*/"_r;
-	    if( v ){ qs << *v; }
-            qs << "},"_r << f.rs;
-	}else{
-	    qs << indent << "{"_r << k << ", "_r << v << "},"_r << f.rs;
-	}
-      }
-    }else{
-    //      sep=f.fs;
-      bool next=false;
-      for( auto i:obj ){
-        if( next ){ qs << f.fs; }
-	qs << i;
-        next=true;
-      }
-  }
-  os << qtl::rstr(qs.str());
-  os << "}"_r;
-  //  os << f;
-  return os;
-}
-
 template <class Q>
 static  std::ostream& operator<<(std::ostream& os, const std::queue<Q>& obj)
 {
@@ -678,6 +694,7 @@ static  std::ostream& operator<<(std::ostream& os, const std::queue<Q>& obj)
   //  os << f;
   return os;
 }
+#endif
 #if 0
 //}; // end namespace qtl
   namespace qtl{//
@@ -878,50 +895,9 @@ template<typename T, typename... M>
 //  template<typename T, typename... M>
 //    named_members(const T&t, const member_name<T,M...>&n...) -> named_members<T,M...>;
 
-template<class TupType, size_t... I>
-void inline print(std::ostream& os,const TupType& _tup, std::index_sequence<I...>)
-{
-  NOTRACE( std::cout << __PRETTY_FUNCTION__ << std::endl; )
-  auto t=std::get<0>(_tup);
-  NOTRACE( std::cout << t <<  std::endl; )
-  (..., (os << (I == 0? "" : ", ") << std::get<I>(_tup)));
-}
-
-template<class T, class M, size_t... I>
-void inline print(std::ostream& os, const T& obj, const M& _tup, std::index_sequence<I...>){
-  using namespace qtl::literals;
-  qtl::ios_base::fmtflags f;
-  os >> f;
-  (..., (os << qtl::type_name< decltype(obj.*std::get<I>(_tup).member)>(f.verbosity) << " "_r << std::get<I>(_tup).name << "= "_r << obj.*std::get<I>(_tup).member << ";\n"_r  ) );
-}
-
-template<typename T, typename... M>
-std::ostream& operator<<(std::ostream& os, const named_members<T,M...> &obj){
-  using  namespace qtl::literals;
-  NOTRACE( std::cout << __PRETTY_FUNCTION__ << '\n'<<std::flush; )
-  NOTRACE(  std::cout << qtl::type_name<decltype(obj)>() << '\n'; )
-  qtl::ios_base::fmtflags f;
-  os >> f;
-  os << qtl::type_name<decltype(std::get<0>(obj))>(f.verbosity);
-  NOTRACE( os << '\n' << qtl::type_name<decltype(std::get<1>(obj))>() << '\n'; )
-  os << "{\n"_r;
-  NOTRACE( std::cout << __LINE__ << '\n'<<std::flush; )
-  print<T>(os,obj.first,obj.second,std::make_index_sequence<sizeof...(M)>());
-  os << '}';
-  return os;
-}
-
-template <typename... T> // https://ideone.com/Rihfre
-std::ostream& operator<<(std::ostream& os, const std::tuple<T...>& obj){
-  using  namespace qtl::literals;
-  os /* << boost::core::demangle(typeid(obj).name()) << */ << "std::tuple{"_r;   
-  print(os,obj,std::make_index_sequence<sizeof...(T)>());
-  os << "}"_r;
-  return os;
-}
-
-template <typename T> 
-static inline std::ostream& operator<<(std::ostream& os, const std::optional<T>& obj){
+#if 0
+    template </*typename S=std::ostream, */typename T> 
+static inline qtl::basic_ostream/*<S>*/& operator<<(qtl::basic_ostream/*<S>*/ & os, const std::optional<T>& obj){
   using  namespace qtl::literals;
   if( obj ){
     os << "std::optional{"_r <<  *obj << "}"_r;
@@ -932,7 +908,9 @@ static inline std::ostream& operator<<(std::ostream& os, const std::optional<T>&
   }
   return os;
 }
+#endif
 
+#if 0
 template <class T,
 #if 1
 	  typename = std::enable_if_t<!std::is_same<char,T>::value> >
@@ -952,13 +930,283 @@ std::ostream& operator<<(std::ostream& os, const T* obj){
   }
   return os;
 }
-  namespace qtl{
+#endif
+namespace qtl{
+    template<typename T>
+      using std_ostream_left_shift_t = decltype( std::declval<std::ostream&>() << std::declval<const T&>() );
+    #define  IS_DETECTED_V std::experimental::is_detected_v
+ 
+  #define BASE_T std::ostream
+  //  template<typename B=std::ostream>
+  class basic_ostream/*:public BASE_T*/{
+    using base_t=BASE_T;
+    #undef BASE_T
+    base_t & os;
+    //using base_t::base_t;
+  public:
+   basic_ostream(base_t& b):os(b){}
+    //   operator base_t()const { return os; }
+  
+  operator base_t&(){ return os; }
+    template<typename S>
+    basic_ostream& operator<<(const qtl::rstr<S>s){
+      *this << static_cast<S>(s);
+      return *this;
+    }
+
+    //    ostream& operator<<( const std::basic_ostream<base_t::char_type,std::char_traits<base_t::char_type>>& o ){
+    basic_ostream& operator<<( base_t& (*pf)(base_t& os) ){
+      os << pf;
+      return *this;
+    }
+
+    template <typename T
+    //     ,typename D= std::experimental::is_detected<std_ostream_left_shift_t,T>
+    //,typename E= std::enable_if_t<std::experimental::is_detected_v<std_ostream_left_shift_t,T>>
+    ,std::enable_if_t<std::experimental::is_detected_v<std_ostream_left_shift_t,T>,int> = 0
+    >
+    basic_ostream& operator<<(const T &t){ 
+      NOTRACE( os << __PRETTY_FUNCTION__ << '\n'; )
+      NOTRACE( os << qtl::type<D>() << '\n'; )
+      NOTRACE( os << qtl::type<std_ostream_left_shift_t<T>>() << '\n'; )
+      NOTRACE( os << qtl::type_name<std_ostream_left_shift_t<T>>() << '\n'; )
+      NOTRACE( os << (std::experimental::is_detected_v<std_ostream_left_shift_t,T>) << '\n'; )
+      NOTRACE( os << (qtl::type_name< std::experimental::is_detected<std_ostream_left_shift_t,T> >()) << '\n'; )
+      NOTRACE( os <<  qtl::type<decltype(os)>() << " << " << qtl::type<decltype(t)>() << '\n'; )
+      NOTRACE( os <<  qtl::type< decltype( std::declval<base_t>() << std::declval<const T&>() ) >()<< '\n'; )
+      NOTRACE( os <<  qtl::type<decltype( std::declval<base_t>())>() << "<<" << qtl::type<T>() << '\n'; )
+
+      NOTRACE( os <<  qtl::type<decltype( std::declval<base_t>())>() << "<<" << qtl::type< decltype(std::declval<const T&>())>() << '\n'; )
+      NOTRACE( os <<   qtl::type<   decltype( std::declval<base_t>() << std::declval<const T&>() ) >()<< '\n'; )
+
+      //      TRACE( os <<  qtl::type_name<decltype( std::declval<decltype(os)>() << std::declval<decltype(t)>() )>() << '\n'; )
+      //      TRACE( os <<  qtl::type_name<decltype( os << t )>() << '\n'; )
+      os << t;
+     return *this;
+   }
+
+   template <typename T>
+   basic_ostream& operator<<(const qtl::type<T> &t){
+     NOTRACE( std::cout << __PRETTY_FUNCTION__ << '\n'; )
+     qtl::ios_base::fmtflags f;
+     *this >> f;
+     *this << qtl::type_name<T>(f.verbosity);
+     return *this;
+   }
+
+    template<typename T>
+      using std_ostream_right_shift_t = decltype( std::declval<base_t>() >> std::declval<T>() );
+#if 0
+    template <typename T,
+      typename= std::enable_if_t<IS_DETECTED_V<std_ostream_right_shift_t,T>>
+   >
+   basic_ostream& operator>>(T &t){
+      return os >> t;
+   }
+#endif
+#if 0
+    template<typename T>
+    using str_t = decltype( std::declval<T>().str() );
+    template<typename T = std::experimental::detected_t<str_t,base_t>>
+    T str(){
+      return os.str();
+    }
+ #endif  
+
+template <class T
+    ,std::enable_if_t<!std::experimental::is_detected_v<std_ostream_left_shift_t,T>,int> = 0
+    >
+basic_ostream& operator<<(const T* obj){
+    using  namespace qtl::literals;
+    NOTRACE( std::cout << __PRETTY_FUNCTION__ << '\n'<<std::flush; )
+    NOTRACE(  std::cout << qtl::type_name<decltype(obj)>() << '\n'; )
+    TRACE(  std::cout <<  qtl::type_name<decltype(*obj)>() << '\n'; )
+    *this << "/*"_r << ((void*)obj) << "*/"_r;
+#if 0
+    if constexpr ( !std::is_function_v<T>){  
+      if( obj ){
+       *this <<  "&("_r << *obj<< ")"_r;
+      }
+    }
+#endif
+    return *this;
+  }
+template <typename T> 
+basic_ostream& operator<<(const std::optional<T>& obj){
+  using  namespace qtl::literals;
+  if( obj ){
+    *this << "std::optional{"_r <<  *obj << "}"_r;
+  }else{
+    qtl::ios_base::fmtflags f;
+    *this >> f;
+    *this << "std::optional<"_r << qtl::type_name<decltype(*obj)>(f.verbosity) << ">{}"_r;
+  }
+  return *this;
+}
+template<typename T>
+basic_ostream &
+operator<<(const std::shared_ptr<T> &obj){
+  *this << "{ ";
+  *this << "use_count()=" << obj.use_count() << ", ";
+  *this << "get()=" << obj.get() ;
+  if( obj.get() ){
+     *this << "=" << *obj.get();
+  }
+  *this << " }";
+  return *this;
+}
+template<typename T>
+basic_ostream &
+operator<<(const std::weak_ptr<T> &obj){
+  *this << "{ ";
+  *this << "use_count()=" << obj.use_count() << ", ";
+  if( !obj.expired() ){ *this << "lock()=" << obj.lock() << " "; }
+  *this << "}";
+  return *this;
+}
+
+    template<typename T>
+    using write_t = decltype( std::declval<T>().write( std::declval<basic_ostream&>() ) );
+    template<typename T>
+    using write_T_t = decltype( std::declval<T>().write(std::declval<basic_ostream&>,std::declval<const T&>()) );
+    template<typename T>
+    using end_t = decltype( std::declval<T>().end() );
+   template <class T
+    //    ,typename EE=std::enable_if_t<!std::experimental::is_detected_v<std_ostream_left_shift_t,T>>
+    //,typename DD= std::experimental::is_detected<std_ostream_left_shift_t,T>
+    ,typename II =typename T::iterator
+    ,typename WRITE_T=std::experimental::is_detected<write_t,T>                    
+    ,std::enable_if_t<!std::experimental::is_detected_v<std_ostream_left_shift_t,T>,int> = 0
+    ,std::enable_if_t<std::experimental::is_detected_v<end_t,T>,int> = 0
+    ,std::enable_if_t<!std::experimental::is_detected_v<write_t,T>,int> = 0
+    //    ,std::enable_if_t<!std::experimental::is_detected_v<write_T_t,T>,int> = 0
+  >
+   basic_ostream& operator<<(const T& obj){
+     return write_container(*this,obj);
+   }
+
+template</*typename S=std::ostream, */class TupType, size_t... I>
+  void inline print(qtl::basic_ostream/*<S>*/& os,const TupType& _tup, std::index_sequence<I...>)
+{
+  NOTRACE( std::cout << __PRETTY_FUNCTION__ << std::endl; )
+  auto t=std::get<0>(_tup);
+  NOTRACE( std::cout << t <<  std::endl; )
+  (..., (os << (I == 0? "" : ", ") << std::get<I>(_tup)));
+}
+
+  template</*typename S=std::ostream, */class T, class M, size_t... I>
+void inline print(qtl::basic_ostream/*<S>*/& os, const T& obj, const M& _tup, std::index_sequence<I...>){
+  using namespace qtl::literals;
+  qtl::ios_base::fmtflags f;
+  os >> f;
+  (..., (os << qtl::type_name< decltype(obj.*std::get<I>(_tup).member)>(f.verbosity) << " "_r << std::get<I>(_tup).name << "= "_r << obj.*std::get<I>(_tup).member << ";\n"_r  ) );
+}
+
+template</*typename S=std::ostream, */typename T, typename... M>
+qtl::basic_ostream/*<S>*/& operator<<(const named_members<T,M...> &obj){
+  using  namespace qtl::literals;
+  NOTRACE( std::cout << __PRETTY_FUNCTION__ << '\n'<<std::flush; )
+  NOTRACE(  std::cout << qtl::type_name<decltype(obj)>() << '\n'; )
+  qtl::ios_base::fmtflags f;
+  *this >> f;
+  *this << qtl::type_name<decltype(std::get<0>(obj))>(f.verbosity);
+  NOTRACE( os << '\n' << qtl::type_name<decltype(std::get<1>(obj))>() << '\n'; )
+  *this << "{\n"_r;
+  NOTRACE( std::cout << __LINE__ << '\n'<<std::flush; )
+    print</*S,*/T>(*this,obj.first,obj.second,std::make_index_sequence<sizeof...(M)>());
+  *this << '}';
+  return *this;
+}
+
+  template </*typename S=std::ostream, */typename... T> // https://ideone.com/Rihfre
+qtl::basic_ostream/*<S>*/& operator<<(const std::tuple<T...>& obj){
+  using  namespace qtl::literals;
+  *this /* << boost::core::demangle(typeid(obj).name()) << */ << "std::tuple{"_r;   
+  print(*this,obj,std::make_index_sequence<sizeof...(T)>());
+  *this << "}"_r;
+  return *this;
+}
+
+  }; // end class qtl::basic_ostream
+
+  #define BASE_T ostream
+  class ostringstream:public BASE_T{
+  public:
+    using base_t=BASE_T;
+    #undef BASE_T
+    std::ostringstream os;
+    using base_t::base_t;
+    ostringstream():base_t(os){};
+    std::string str()const{  return os.str(); }
+  }; // end class ostringstream
+
   template <typename... T>
   rstr<std::string> stream_str(const T&... t){
    auto qs=ostringstream();
     (qs << ... << t);
     return rstr<std::string>(qs.str());
   }
+
+
+    template<typename T>
+    using write_t = decltype( std::declval<T>().write( std::declval<basic_ostream&>() ) );
+    template<typename T>
+    using write_T_t = decltype( std::declval<T>().write(std::declval<basic_ostream&>,std::declval<const T&>()) );
+    template<typename T>
+    using end_t = decltype( std::declval<T>().end() );
+   template <class T
+    //    ,typename EE=std::enable_if_t<!std::experimental::is_detected_v<std_ostream_left_shift_t,T>>
+    //,typename DD= std::experimental::is_detected<std_ostream_left_shift_t,T>
+    ,typename II =typename T::iterator
+    ,typename WRITE_T=std::experimental::is_detected<write_t,T>                    
+    ,std::enable_if_t<!std::experimental::is_detected_v<std_ostream_left_shift_t,T>,int> = 0
+    ,std::enable_if_t<std::experimental::is_detected_v<end_t,T>,int> = 0
+    ,std::enable_if_t<!std::experimental::is_detected_v<write_t,T>,int> = 0
+    //    ,std::enable_if_t<!std::experimental::is_detected_v<write_T_t,T>,int> = 0
+  >
+  basic_ostream& write_container(basic_ostream& os, const T& obj)
+  {
+    NOTRACE( std::cout << __PRETTY_FUNCTION__ <<  is_mappish<T>{} << '\n'<<std::flush; )
+    if constexpr ( std::experimental::is_detected_v<write_t,T> ){
+	obj.write(os);
+      }else{
+  qtl::ios_base::fmtflags f;
+  using namespace qtl::literals;
+  os >> f;
+  os << qtl::type_name<decltype(obj)>(f.verbosity);
+  os << "{"_r;
+    ostringstream qs;
+     qs<<f;
+  //  auto sep=f.fs;
+  if( f.verbosity>=qtl::ios_base::fmtflags::id ){
+      qs << qtl::setverbose(qtl::ios_base::fmtflags::generic);
+  }
+  if constexpr ( /*has_mapped_type<T>::value*/ is_mappish<T>{} ){
+      qs << f.rs;
+      qtl::rstr<std::string> indent= std::string((f.indent+1)*2,' ');
+      for( auto [k,v]:obj ){
+	qs << indent << "{"_r << k << ", "_r << v << "},"_r << f.rs;
+      }
+    }else{
+    //      sep=f.fs;
+      bool next=false;
+      for( auto const &i:obj ){
+        if( next ){ qs << f.fs; }
+	qs << i;
+        next=true;
+      }
+    }
+    os << qtl::rstr(qs.str());
+    os << "}"_r;
+    //  os << f;
+    }
+    return os;
+  }
+
+  //  using ostream=basic_ostream<std::ostream>;
+  static inline ostream cout(std::cout);
+  static inline ostream cerr(std::cerr);
+
   }; // end namespace qtl
 template<typename T>
 auto operator<<(std::ostream& os, const T& t) -> decltype(t.print(os), os) {
@@ -1009,17 +1257,17 @@ int main(){
     int const ci=4;
     int & ri=i;
   }test={1,1.23};
-  std::cout << qtl::type_name<decltype(test)>() << "\n";
-  std::cout << typeid(test).name() << "\n";
-  std::cout << typeid(&decltype(test)::d).name() << "\n";
-  std::cout << qtl::type_name<decltype(&decltype(test)::d)>() << "\n";
-  std::cout << qtl::type_name<decltype(test.*(&decltype(test)::d))>() << "\n";
-  std::cout << named_members( test,  std::make_tuple(member_name(&decltype(test)::i,"i"), member_name(&decltype(test)::d,"dbl") ) ) << "\n";
+  qtl::cout << qtl::type_name<decltype(test)>() << "\n";
+  qtl::cout << typeid(test).name() << "\n";
+  qtl::cout << typeid(&decltype(test)::d).name() << "\n";
+  qtl::cout << qtl::type_name<decltype(&decltype(test)::d)>() << "\n";
+  qtl::cout << qtl::type_name<decltype(test.*(&decltype(test)::d))>() << "\n";
+  qtl::cout << named_members( test,  std::make_tuple(member_name(&decltype(test)::i,"i"), member_name(&decltype(test)::d,"dbl") ) ) << "\n";
   //  std::cout << __LINE__ << '\n';
   //  std::cout << named_members( test,  {member_name(&decltype(test)::i,"i"), member_name(&decltype(test)::d,"dbl")} ) << "\n";
   //  std::cout << __LINE__ << '\n';
-  std::cout << named_members( test,  member_name(&decltype(test)::i,"i"), member_name(&decltype(test)::d,"dbl") ) << "\n";
-  std::cout << NAMED_MEMBERS( test,  i,d,ci) << "\n";
+  qtl::cout << named_members( test,  member_name(&decltype(test)::i,"i"), member_name(&decltype(test)::d,"dbl") ) << "\n";
+  qtl::cout << NAMED_MEMBERS( test,  i,d,ci) << "\n";
   #ifndef __clang__
   {
     std::pair t{&decltype(test)::i,"i"};
@@ -1035,25 +1283,25 @@ int main(){
   std::optional<int> o1=1;
 
       auto t=[&](){
- std::cout << m << '\n'<<std::flush;
- std::cout << sm << '\n'<<std::flush;
-  std::cout << v << '\n'<<std::flush;
-  std::cout << &v << '\n'<<std::flush;
-  std::cout << a << '\n'<<std::flush;
-  std::cout << std::vector<int*>{&a[1],&a[0]} << '\n'<<std::flush;
-  std::cout << vv << '\n'<<std::flush;
-  std::cout << std::tuple<int,std::vector<int>*,std::vector<int>,double>(2,&v,v,3.14) << '\n'<<std::flush;
-  std::cout << o0 << "\n" << o1 << '\n'<<std::flush;
-  std::cout << std::set<int>{2,3,5,7} << '\n'<<std::flush;
-  std::cout << std::unordered_set<int>{2,3,5,7} << '\n'<<std::flush;
+ qtl::cout << m << '\n'<<std::flush;
+ qtl::cout << sm << '\n'<<std::flush;
+  qtl::cout << v << '\n'<<std::flush;
+  qtl::cout << &v << '\n'<<std::flush;
+  qtl::cout << a << '\n'<<std::flush;
+  qtl::cout << std::vector<int*>{&a[1],&a[0]} << '\n'<<std::flush;
+  qtl::cout << vv << '\n'<<std::flush;
+  qtl::cout << std::tuple<int,std::vector<int>*,std::vector<int>,double>(2,&v,v,3.14) << '\n'<<std::flush;
+  qtl::cout << o0 << "\n" << o1 << '\n'<<std::flush;
+  qtl::cout << std::set<int>{2,3,5,7} << '\n'<<std::flush;
+  qtl::cout << std::unordered_set<int>{2,3,5,7} << '\n'<<std::flush;
   };
-  std::cout << qtl::setverbose(qtl::ios_base::fmtflags::alltypeinfo);
+  qtl::cout << qtl::setverbose(qtl::ios_base::fmtflags::alltypeinfo);
   t();
-  std::cout << qtl::setverbose(qtl::ios_base::fmtflags::none);
+  qtl::cout << qtl::setverbose(qtl::ios_base::fmtflags::none);
   t();
-  std::cout << qtl::setverbose(qtl::ios_base::fmtflags::id);
+  qtl::cout << qtl::setverbose(qtl::ios_base::fmtflags::id);
   t();
-  std::cout << qtl::setverbose(qtl::ios_base::fmtflags::demangle);
+  qtl::cout << qtl::setverbose(qtl::ios_base::fmtflags::demangle);
   t();
   #ifdef ERROR_INJECT
   //   TypeDisplay<decltype(vv)> dummy;

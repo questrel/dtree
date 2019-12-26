@@ -37,97 +37,9 @@ namespace qtl{
   using x3::alnum;
   using x3::no_case;
 
-#define as_string( p ) 	( x3::rule<struct as_string, std::string>{}= ( raw[ p ] [ to_string ] ) )
-//#define copy_expr( p ) 	( x3::rule<struct _, qtl::expr>{}= ( p [ copy_attr ] ) )
-#define copy_expr( p ) 	( p [ copy_attr ] )
-#define TYPENAME(t) boost::core::demangle(std::string(typeid(t).name()).c_str())
 
-
- static std::map<std::string,qtl::interval> dictionary;
- static auto const assignment_rule=x3::rule<struct assignment, std::pair<std::string,qtl::expr>>{}=
-    (id_rule >> lit("=") >> expr_rule)
-  [ ([](auto& ctx){
-         using boost::fusion::at_c;
-	 NOTRACE( std::cerr << "assignment_rule " << __LINE__ << "\n"; )
-	 NOTRACE( std::cout << "type(_val): " << qtl::type_name<decltype(_val(ctx))>() << "\n"; )
-	 NOTRACE( std::cout << "type(_attr): " << qtl::type_name<decltype(_attr(ctx))>() << "\n"; )
-	 if(  at_c<0>( _attr(ctx) ).identifier ){
-	    _val(ctx).first  = *at_c<0>( _attr(ctx) ).identifier;
-	 }else{
-	   assert( at_c<0>( _attr(ctx) ).identifier );
-         }
-	 _val(ctx).second = at_c<1>( _attr(ctx) );
-      })]
-;
-
-static auto const assignment_list=
-  ( assignment_rule % ',') 
-  [ ([](auto& ctx){
-	 NOTRACE( std::cerr << "assignment_list " << __LINE__ << "\n"; )
-	 NOTRACE( std::cerr << "type(_val): " << qtl::type_name<decltype(_val(ctx))>() << "\n"; )
-	 NOTRACE( std::cerr << "type(_attr): " << qtl::type_name<decltype(_attr(ctx))>() << "\n"; )
-	 for( auto x:_attr(ctx) ){
-	   std::cerr << "{" << x.first << ", " << x.second << " = " << x.second.eval(dictionary) << "}" << '\n';
-	   dictionary[x.first]=x.second.eval(dictionary);
-	   //std::cerr << "dictionary=" << dictionary << '\n';
-         }
-      })]
-  ;
- static auto const set_clause=
-   (no_case[lit("SET")] >
- assignment_list )
-;
-
-static auto const alias_list=
-  ( assignment_rule % ',') 
-  [ ([](auto& ctx){
-	 NOTRACE( std::cerr << "alias_list " << __LINE__ << "\n"; )
-	 NOTRACE( std::cerr << "type(_val): " << qtl::type_name<decltype(_val(ctx))>() << "\n"; )
-	 NOTRACE( std::cerr << "type(_attr): " << qtl::type_name<decltype(_attr(ctx))>() << "\n"; )
-	 for( auto x:_attr(ctx) ){
-	   std::cerr << "{" << x.first << ", " << x.second << " = " << x.second.eval(dictionary) << "}" << '\n';
-	   dictionary[x.first]=x.second;
-	   //	   TRACE( std::cerr << "dictionary=" << dictionary << '\n'; )
-         }
-      })]
-  ;
- static auto const alias_clause=
-   (no_case[lit("ALIAS")] >
- alias_list )
-;
-
-static inline qtl::store file;
-
-static auto const insert_clause=
-  (no_case[ lit("INSERT") > lit("INTO") ] > id_rule > no_case[ lit("VALUES") ] > list_rule)
-  [ ([](auto& ctx){
-	 TRACE( std::cerr << "insert_clause" << __LINE__ << "\n"; )
-	 NOTRACE( std::cout << "type(_val): " << qtl::type_name<decltype(_val(ctx))>() << "\n"; )
-	 NOTRACE( std::cout << "type(_attr): " << qtl::type_name<decltype(_attr(ctx))>() << "\n"; )
-         using boost::fusion::at_c;
-         NOTRACE( std::cout << "type(at_c<0>): " << qtl::type_name<decltype( at_c<0>( _attr(ctx) ) )>() << '\n'; );
-         NOTRACE( std::cout << "type(at_c<1>): " << qtl::type_name<decltype( at_c<1>( _attr(ctx) ) )>() << '\n'; );
-	 if( at_c<0>( _attr(ctx) ).identifier ){
-	   TRACE ( std::cout <<  "into " << *at_c<0>( _attr(ctx) ).identifier << '\n'; )
-	 }
-	 std::vector<lex::string> v;
-	 for( auto x: at_c<1>( _attr(ctx) ) ){
-	   NOTRACE( std::cout <<  x  << '\n'; );
-           auto y=x.eval(dictionary);
-	   NOTRACE( std::cout <<  y  << '\n'; );
-           v.push_back(y.l().value().raw());
-         }
-	 NOTRACE( std::cout << v << '\n'; )
-	 file[ *at_c<0>( _attr(ctx) ).identifier ]=v;
-	 NOTRACE( std::cout << file << '\n'; );
-      })]
-  ;
-
- static auto const where_clause=
-   (no_case[lit("WHERE")] > expr_rule)
-;
-
-inline static const  std::map<std::string,expr> cols={
+#if 0
+inline static std::map<std::string,expr> dictionary={
                                               {"col0",expr(op::column,"0"s)},
                                               {"col1",expr(op::column,"1"s)},
     					      {"col2",expr(op::column,"2"s)},
@@ -139,10 +51,274 @@ inline static const  std::map<std::string,expr> cols={
 					      {"col8",expr(op::column,"8"s)},
 					      {"col9",expr(op::column,"9"s)},
 };
+#endif
+using  namespace qtl::literals;
+  inline static std::map<std::string,std::map<std::string,qtl::interval>> valtab{
+    {"",
+     {
+     {"TRUE",qtl::interval(kleen::T)},
+     {"FALSE",qtl::interval(kleen::F)},
+     {"MAYBE",qtl::interval(kleen::U)},
+     }
+    },
+  };
+  inline static std::map<std::string,std::map<std::string,expr>> symtab={
+  {"",
+   {
+         {"col0",0_column},
+         {"col1",1_column},
+         {"col2",2_column},
+         {"col3",3_column},
+         {"col4",4_column},
+         {"col5",5_column},
+         {"col6",6_column},
+         {"col7",7_column},
+         {"col8",8_column},
+         {"col9",9_column},
+   }
+  },
+ };
+ inline static std::string sep(".");
+ template<typename S=std::string, typename V=qtl::expr, const S &separator=sep>
+ std::map<S,V> lookup(const std::map<S,std::map<S,V>> &symtab,const S &name=""){
+   std::map<S,V> ret;
+   if( auto f=symtab.find(""); f!=symtab.end() ){
+     ret = f->second;
+   }
+   if( !name.empty() ){
+     if( auto f=symtab.find(name); f!=symtab.end() ){
+       for( const auto [key,value]:f->second ){
+	 ret[name + separator + key] = value;
+	 if( !ret.count(key) ){
+            ret[key]=value;
+	 }
+       }
+     }
+  }
+  return ret;
+ }
+#if 0
+  template<typename S=std::string, typename E=qtl::expr, typename I=interval>
+ std::map<S,I> lookup(const std::map<S,E> &dictionary){
+  for( const auto [key,value]:symtab[dictionary] ){
+    ret[key]=value.eval();
+  }
+  return ret;
+ }
+#endif
+  
+#define as_string( p ) 	( x3::rule<struct as_string, std::string>{}= ( raw[ p ] [ to_string ] ) )
+//#define copy_expr( p ) 	( x3::rule<struct _, qtl::expr>{}= ( p [ copy_attr ] ) )
+#define copy_expr( p ) 	( p [ copy_attr ] )
+#define TYPENAME(t) boost::core::demangle(std::string(typeid(t).name()).c_str())
+
+ static auto const assignment_rule=x3::rule<struct assignment, std::pair<std::string,qtl::expr>>{}=
+    (name_rule >> lit("=") >> expr_rule)
+  [ ([](auto& ctx){
+         using boost::fusion::at_c;
+	 NOTRACE( std::cerr << "assignment_rule " << __LINE__ << "\n"; )
+	 NOTRACE( std::cout << "type(_val): " << qtl::type_name<decltype(_val(ctx))>() << "\n"; )
+	 NOTRACE( std::cout << "type(_attr): " << qtl::type_name<decltype(_attr(ctx))>() << "\n"; )
+	 _val(ctx).first  = at_c<0>( _attr(ctx) );
+	 _val(ctx).second = at_c<1>( _attr(ctx) );
+      })]
+;
+static auto const assignment_list=
+  ( assignment_rule % ',') 
+  [ ([](auto& ctx){
+#if 0
+	 TRACE( std::cerr << "assignment_list " << __LINE__ << "\n"; )
+	 TRACE( std::cerr << "type(_val): " << qtl::type_name<decltype(_val(ctx))>() << "\n"; )
+	 TRACE( std::cerr << "type(_attr): " << qtl::type_name<decltype(_attr(ctx))>() << "\n"; )
+
+         TRACE( qtl::cerr << valtab << '\n'; )
+
+	 for( auto x:_attr(ctx) ){
+	   std::cerr << "{" << x.first << ", (" << x.second << " = " << x.second.bind(dict).eval(valtab) << ") }" << '\n';
+	   valtab[x.first]=x.second.bind(dict).eval(valtab);
+         }
+         TRACE( qtl::cerr << valtab << '\n'; )
+#else
+	   _val(ctx) = _attr(ctx);
+#endif
+      })]
+  ;
+ static auto const set_clause=
+   (
+   (no_case[lit("SET")] > assignment_list )
+   >> -( no_case[lit("INTO")|lit("USING")|lit("FROM")|lit("NAMESPACE")] > name_rule)
+    )
+     [ ([](auto& ctx){
+	 NOTRACE( std::cerr << "set_clause " << __LINE__ << "\n"; )
+	 NOTRACE( std::cerr << "type(_val): " << qtl::type_name<decltype(_val(ctx))>() << "\n"; )
+	 NOTRACE( std::cerr << "type(_attr): " << qtl::type_name<decltype(_attr(ctx))>() << "\n"; )
+	   std::string prefix="";
+	 NOTRACE( std::cerr << "type(at_c<0>( _attr(ctx) )) " << qtl::type_name< decltype( at_c<0>( _attr(ctx) ) )>()  << "\n"; )
+   	 NOTRACE( std::cerr << "type(at_c<1>( _attr(ctx) )) " << qtl::type_name< decltype( at_c<1>( _attr(ctx) ) )>()  << "\n"; )
+	 NOTRACE( std::cerr << "at_c<1>( _attr(ctx) ) " << at_c<1>( _attr(ctx) )  << "\n"; )
+	 NOTRACE( std::cerr << "type(*at_c<1>( _attr(ctx) )) " << qtl::type_name< decltype( *at_c<1>( _attr(ctx) ) )>()  << "\n"; )
+	   //NOTRACE( std::cerr << "type( (*at_c<1>( _attr(ctx) )).identifier " << qtl::type_name< decltype( (*at_c<1>( _attr(ctx) )).identifier )>()  << "\n"; )
+	   //NOTRACE( std::cerr << "(*at_c<1>( _attr(ctx) )).identifier;" << (*at_c<1>( _attr(ctx) )).identifier << "\n"; )
+	   //NOTRACE( std::cerr << "*(*at_c<1>( _attr(ctx) )).identifier;" << *(*at_c<1>( _attr(ctx) )).identifier << "\n"; )
+         NOTRACE( qtl::cerr << valtab << '\n'; )
+	   std::cout << "SET "; 
+         if(  at_c<1>( _attr(ctx) ) ){
+	   prefix = *at_c<1>( _attr(ctx) );
+	    std::cout << "USING " << prefix<< "\n";
+	 }
+	 for( auto x:at_c<0>(_attr(ctx)) ){
+           qtl::cout << x.first << " = " << x.second.stringify() << "\n";;
+	   auto v=x.second.bind(symtab[prefix]).eval(valtab[prefix]);
+	   valtab[prefix][x.first]=v;
+	   if( !prefix.empty() ){
+	     valtab[""][prefix + sep + x.first]=v;
+	   }else if( auto f=x.first.find(sep); f>0 && f < x.first.size()-sep.size() ){
+	     valtab[x.first.substr(0,f)][x.first.substr(f+sep.size())]=v;
+           }
+         }
+         TRACE( qtl::cerr << valtab << '\n'; )
+	   })]
+
+;
+#if 0
+static auto const alias_list=
+  ( assignment_rule % ',') 
+#if 0
+  [ ([](auto& ctx){
+	 NOTRACE( std::cerr << "alias_list " << __LINE__ << "\n"; )
+	 NOTRACE( std::cerr << "type(_val): " << qtl::type_name<decltype(_val(ctx))>() << "\n"; )
+	 NOTRACE( std::cerr << "type(_attr): " << qtl::type_name<decltype(_attr(ctx))>() << "\n"; )
+         TRACE( qtl::cerr << "aliases=" << dictionary << '\n'; )
+	 for( auto x:_attr(ctx) ){
+	   std::cerr << "{" << x.first << " = " << x.second << "}" << '\n';
+	   dictionary[x.first]=x.second;
+         }
+         TRACE( qtl::cerr << "aliases=" << dictionary << '\n'; )
+      })]
+#endif
+  ;
+#endif
+ static auto const alias_clause=
+     (
+     (no_case[lit("ALIAS")] > assignment_list )
+     >> -( no_case[lit("INTO")|lit("USING")|lit("FROM")|lit("NAMESPACE")] > name_rule)
+     )
+     [ ([](auto& ctx){
+	 NOTRACE( std::cerr << "alias_clause " << __LINE__ << "\n"; )
+         NOTRACE( qtl::cerr << "aliases=" << symtab << '\n'; )
+	 NOTRACE( std::cerr << "type(_val): " << qtl::type_name<decltype(_val(ctx))>() << "\n"; )
+	 NOTRACE( std::cerr << "type(_attr): " << qtl::type_name<decltype(_attr(ctx))>() << "\n"; )
+	   std::string prefix="";
+	 NOTRACE( std::cerr << "type(at_c<0>( _attr(ctx) )) " << qtl::type_name< decltype( at_c<0>( _attr(ctx) ) )>()  << "\n"; )
+   	 NOTRACE( std::cerr << "type(at_c<1>( _attr(ctx) )) " << qtl::type_name< decltype( at_c<1>( _attr(ctx) ) )>()  << "\n"; )
+	 NOTRACE( std::cerr << "at_c<1>( _attr(ctx) ) " << at_c<1>( _attr(ctx) )  << "\n"; )
+	 NOTRACE( std::cerr << "type(*at_c<1>( _attr(ctx) )) " << qtl::type_name< decltype( *at_c<1>( _attr(ctx) ) )>()  << "\n"; )
+	   //NOTRACE( std::cerr << "type( (*at_c<1>( _attr(ctx) )).identifier " << qtl::type_name< decltype( (*at_c<1>( _attr(ctx) )).identifier )>()  << "\n"; )
+	   //NOTRACE( std::cerr << "(*at_c<1>( _attr(ctx) )).identifier;" << (*at_c<1>( _attr(ctx) )).identifier << "\n"; )
+	 NOTRACE( std::cerr << "*(*at_c<1>( _attr(ctx) )).identifier;" << *(*at_c<1>( _attr(ctx) )).identifier << "\n"; )
+	 std::cout << "ALIAS ";
+         if(  at_c<1>( _attr(ctx) ) ){
+	   prefix=*at_c<1>( _attr(ctx) );
+	   std::cout << "USING " << prefix << '\n';
+	 }
+	 for( auto x:at_c<0>(_attr(ctx)) ){
+	   std::cout << x.first << " = "  << x.second.stringify() << "\n";
+	   symtab[prefix][x.first]=x.second.bind(symtab[prefix]);;
+	   if( !prefix.empty() ){
+	     symtab[""][prefix + sep + x.first]=x.second;
+	   }else if( auto f=x.first.find(sep); f>0 && f < x.first.size()-sep.size() ){
+	     symtab[x.first.substr(0,f)][x.first.substr(f+sep.size())]=x.second;
+           }
+         }
+         TRACE(*/ qtl::cerr << "aliases=" << symtab << '\n'; )
+   })]
+	;
+
+static auto const create_table_clause=
+  (
+    no_case[ lit("CREATE") > lit ("TABLE") ]
+    >
+    name_rule
+    >
+   '('
+    >
+    (
+	(
+	  name_rule
+	  >>
+	  (
+	     (omit[
+#if 0
+		   *alnum >> - ('(' >> *alnum >> ')')
+#else
+		   *id_rule
+#endif
+	     ])
+	  )
+	)
+	%
+        ','
+    )
+    >
+    ')' 
+  )
+  [ ([](auto& ctx){
+       	 NOTRACE( std::cerr << "create_clause" << __LINE__ << "\n"; )
+	 NOTRACE( std::cout << "type(_val): " << qtl::type_name<decltype(_val(ctx))>() << "\n"; )
+	 NOTRACE( std::cout << "type(_attr): " << qtl::type_name<decltype(_attr(ctx))>() << "\n"; )
+         NOTRACE( std::cout << "type(at_c<0>): " << qtl::type_name<decltype( at_c<0>( _attr(ctx) ) )>() << '\n'; );
+         NOTRACE( std::cout << "type(at_c<1>): " << qtl::type_name<decltype( at_c<1>( _attr(ctx) ) )>() << '\n'; );
+
+	 std::cout << "CREATE TABLE ";
+	 std::string prefix = at_c<0>(_attr(ctx) );
+	 std::cout << prefix << '\n';
+	 int col=0;
+	 for( auto x: at_c<1>( _attr(ctx) ) ){
+	   ++col;
+	   std::cout << "ALIAS " << prefix << "." << x  << " = column(" << col << ")" << '\n';
+	   auto e=qtl::expr(op::column,std::to_string(col));
+           symtab[prefix][x] = e;
+           symtab[""][prefix + sep + x] = e;
+	 }
+	 TRACE( qtl::cout << symtab << '\n'; );
+  })]
+;
+static inline qtl::store file;
+
+static auto const insert_clause=
+  (no_case[ lit("INSERT") > lit("INTO") ] > name_rule > no_case[ lit("VALUES") ] > list_rule)
+  [ ([](auto& ctx){
+	 TRACE( std::cerr << "insert_clause" << __LINE__ << "\n"; )
+	 NOTRACE( std::cout << "type(_val): " << qtl::type_name<decltype(_val(ctx))>() << "\n"; )
+	 NOTRACE( std::cout << "type(_attr): " << qtl::type_name<decltype(_attr(ctx))>() << "\n"; )
+         using boost::fusion::at_c;
+         NOTRACE( std::cout << "type(at_c<0>): " << qtl::type_name<decltype( at_c<0>( _attr(ctx) ) )>() << '\n'; );
+         NOTRACE( std::cout << "type(at_c<1>): " << qtl::type_name<decltype( at_c<1>( _attr(ctx) ) )>() << '\n'; );
+	 std::cout << "INSERT ";
+	 auto into= at_c<0>( _attr(ctx) );
+	 std::cout <<  "INTO " << into << '\n';
+	 std::vector<lex::string> v;
+	 //	 auto dict=lookup(symtab, *at_c<0>( _attr(ctx) ).identifier);
+	 for( auto x: at_c<1>( _attr(ctx) ) ){
+	   std::cout <<  x  << '\n';
+           auto y=x.bind(symtab[into]).eval(valtab[into]);
+	   TRACE( std::cout <<  y  << '\n'; );
+           v.push_back(y.l().value().raw());
+         }
+	 NOTRACE( std::cout << v << '\n'; )
+	 file[ into ]=v;
+	 NOTRACE( std::cout << file << '\n'; );
+      })]
+  ;
+
+ static auto const where_clause=
+   (no_case[lit("WHERE")] > expr_rule)
+;
+
 static auto const select_clause=
   //  (  (lit("SELECT") >> (list_rule | (lit("*")>>attr('*')) ) ) >>  lit("FROM") >> id_rule >> -where_clause  )
   //  (lit("SELECT") > (list_rule | string("*") ) >> lit("FROM") >> id_rule >> -where_clause)
-  (no_case[lit("SELECT")] > (string("*") | list_rule) >> no_case[lit("FROM")] >> id_rule >> -where_clause)
+  (no_case[lit("SELECT")] > (string("*") | list_rule) >> no_case[lit("FROM")] >> name_rule >> -where_clause)
   [ ([](auto& ctx){
 	 TRACE( std::cerr << "select_clause" << __LINE__ << "\n"; )
 	 NOTRACE( std::cout << "type(_val): " << qtl::type_name<decltype(_val(ctx))>() << "\n"; )
@@ -152,49 +328,27 @@ static auto const select_clause=
          NOTRACE( std::cout << "type(at_c<1>): " << qtl::type_name<decltype( at_c<1>( _attr(ctx) ) )>() << '\n'; );
          //TRACE( std::cout << "type(at_c<2>): " << qtl::type_name<decltype( at_c<2>( _attr(ctx) ) )>() << '\n'; );
 	 NOTRACE( std::cout << "which: " << at_c<0>( _attr(ctx)).which() << '\n'; )
-	 if( at_c<0>( _attr(ctx)).which() == 0 ){
+	 std::cout << "SELECT ";
+
+	 if( at_c<0>( _attr(ctx)).which() == 0 ){ // *
 	   std::cout << "*\n";
-         }else{
-	   for( auto x: boost::get<std::vector<qtl::expr>>( at_c<0>(_attr(ctx)) ) ){
-	     std::cout << x.stringify() << '\n';
-           }
+	 }else{ //list_rule
+	     for( auto x: boost::get<std::vector<qtl::expr>>( at_c<0>(_attr(ctx)) ) ){
+	       std::cout << x.stringify() << '\n';
+             }
          }
-	 if( at_c<1>( _attr(ctx) ).identifier ){
-	 	std::cout << "from " << *at_c<1>( _attr(ctx) ).identifier << '\n';
-	 }else{
-	   assert(  at_c<1>( _attr(ctx) ).identifier );
-         }
+
+	 std::string from = at_c<1>( _attr(ctx) );
+	 std::cout << "FROM "  << from << "\n";
+
          if(  at_c<2>( _attr(ctx) ) ){
-	   std::cout << "where " << at_c<2>( _attr(ctx) )->stringify() <<'\n';
+	   std::cout << "WHERE " << at_c<2>( _attr(ctx) )->stringify() <<'\n';
          }
 	 NOTRACE( std::cout << file << '\n'; );
-	 #if 0
-	 for( auto  x:file[{*at_c<1>( _attr(ctx) ).identifier}] ){
-           TRACE( std::cout << __LINE__ << "\n"; )
-           std::vector<interval> args;
-           if(  at_c<2>(_attr(ctx)) || at_c<0>( _attr(ctx)).which() != 0 ){
-	     args.push_back( *at_c<1>( _attr(ctx) ).identifier );
-	     for( auto y:x ){
-	       args.push_back(y);
-             }
-	   }
-	   if( !at_c<2>(_attr(ctx)) || at_c<2>(_attr(ctx))->bind( cols ).eval( dictionary, args ) ){
-	     if( at_c<0>( _attr(ctx)).which() == 0 ){
-	       for( auto y:x ){
-	         std::cout << y << ',';
-               }
-	     }else{
-	      for( auto x: boost::get<std::vector<qtl::expr>>( at_c<0>(_attr(ctx)) ) ){
-	        std::cout << x.bind(cols).eval(dictionary,args)  << ',';
-               }
-             }
-            std::cout << '\n';
-	   }
-         }
-         #else
-         auto v=file[ *at_c<1>( _attr(ctx) ).identifier ];
+	 //         auto dict=lookup(symtab,*at_c<1>( _attr(ctx) ).identifier);
+         auto v=file[ from ];
          if( at_c<2>(_attr(ctx)) ){
-           v=v[at_c<2>(_attr(ctx))->bind( cols )];
+           v=v[at_c<2>(_attr(ctx))->bind( symtab[from] )];
          }
 	 TRACE(std::cout << v.predicate << '\n'; )
 	 for( auto r:v ){
@@ -211,17 +365,17 @@ static auto const select_clause=
 	      auto p=store::path()+r;
 	      NOTRACE( std::cout << p << '\n');
 	      for( auto e: boost::get<std::vector<qtl::expr>>( at_c<0>(_attr(ctx)) ) ){
-	        std::cout << e.bind(cols).eval(dictionary,p)  << ',';
+	        std::cout << e.bind(symtab[from]).eval(valtab[from],p)  << ',';
               }
             }
            std::cout << '\n';
          }
-         #endif
+
 	 NOTRACE( std::cout << file << '\n'; );
       })]
   ;
 static auto const delete_clause=
-  (no_case[lit("DELETE") > lit("FROM")]> id_rule >> -where_clause)
+  (no_case[lit("DELETE") > lit("FROM")]> name_rule >> -where_clause)
   [ ([](auto& ctx){
 	 TRACE( std::cerr << "delete_clause" << __LINE__ << "\n"; )
 	 NOTRACE( std::cout << "type(_val): " << qtl::type_name<decltype(_val(ctx))>() << "\n"; )
@@ -229,22 +383,28 @@ static auto const delete_clause=
          using boost::fusion::at_c;
          NOTRACE( std::cout << "type(at_c<0>): " << qtl::type_name<decltype( at_c<0>( _attr(ctx) ) )>() << '\n'; );
          NOTRACE( std::cout << "type(at_c<1>): " << qtl::type_name<decltype( at_c<1>( _attr(ctx) ) )>() << '\n'; );
-	 if( at_c<0>( _attr(ctx) ).identifier ){
-	   TRACE( std::cout <<  "FROM " << *at_c<0>( _attr(ctx) ).identifier << '\n'; 
-		  if( at_c<1>(_attr(ctx)) ){
-                    std::cout <<  "WHERE " << at_c<1>( _attr(ctx) )->stringify() << '\n'; 
-		  }
-	   )
+
+         std::cout << "DEETE ";
+	 std::string from = at_c<0>( _attr(ctx) );
+	 std::cout <<  "FROM " << from << '\n'; 
+	 if( at_c<1>(_attr(ctx)) ){
+                 std::cout <<  "WHERE " << at_c<1>( _attr(ctx) )->stringify() << '\n'; 
+	  }
+	   //	     auto dict=lookup(symtab, *at_c<0>( _attr(ctx) ).identifier );
 	   std::vector<std::vector<lex::string>>del;
- 	   for( auto  x:file[ *at_c<0>( _attr(ctx) ).identifier ] ){	   
+	   qtl::expr where;
+	   if( at_c<1>(_attr(ctx)) ){
+	     where=at_c<1>(_attr(ctx))->bind( symtab[from] );
+           }
+ 	   for( auto  x:file[ from ] ){	   
               std::vector<interval> args;
 	      //args.push_back( *at_c<0>( _attr(ctx) ).identifier );
 	      for( auto y:x ){
 	         args.push_back(y);
               }
 	      NOTRACE(  std::cerr << "args:" << args << '\n'; );
-	      NOTRACE(  std::cerr << (!at_c<1>(_attr(ctx)) || at_c<1>(_attr(ctx))->bind( cols ).eval( dictionary, args )) << '\n'; );
-	      if( !at_c<1>(_attr(ctx)) || at_c<1>(_attr(ctx))->bind( cols ).eval( dictionary, args ) ){
+	      NOTRACE(  std::cerr << (!at_c<1>(_attr(ctx)) || where.eval( valtab[from],args )) << '\n'; );
+	      if( !at_c<1>(_attr(ctx)) || where.eval( valtab[from],args ) ){
 		std::vector<lex::string>d;
 	        //d.push_back( *at_c<0>( _attr(ctx) ).identifier );
 	        for( auto y:x ){
@@ -257,14 +417,13 @@ static auto const delete_clause=
            for( auto d:del ){
 	     NOTRACE( std::cout << "delete(" << d << ")\n"; )
  	     file[d]=nullptr;
- 	     NOTRACE( std::cout << file << '\n'; );
            }
-	 }
+ 	   NOTRACE( std::cout << file << '\n'; );
       })]
   ;
 
  static auto const sql_rule=
-   ( (select_clause | set_clause | alias_clause | insert_clause | delete_clause) > (lit(";")|x3::eoi) )
+   ( (select_clause | set_clause | alias_clause | insert_clause | delete_clause | create_table_clause) > (lit(";")|x3::eoi) )
    ;
 
 } // end namespace qtl
@@ -441,6 +600,8 @@ if( argc==1 || argv [1][0] == '<' ){
   }
  qtl::file.save("sql.dat");
   std::cout << "test passed\n";
+  //  qtl::dictionary.clear();
+  qtl::valtab.clear();
   exit(0);
  }
  if( std::strcmp(argv[1],"dict")==0 ){
@@ -459,6 +620,7 @@ if( argc==1 || argv [1][0] == '<' ){
             << "DELETE  FROM bar WHERE col4='del' ;"
             << " SELECT col1+col2, col4  FROM bar WHERE col1+col2<=col3 ;"
             << "\n";
+
  }
 #endif
 

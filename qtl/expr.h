@@ -176,7 +176,7 @@ static auto const num_rule=x3::rule<struct num_rule, qtl::expr>{} =
 #endif
     ;
 
- static auto const id_char= (alnum|char_('_') );
+ static auto const id_char= (alnum|char_("_.") );
 
  //static x3::rule<struct _, qtl::expr> const expr_rule;
  static expr_rule_t const expr_rule;
@@ -223,11 +223,16 @@ static auto const num_rule=x3::rule<struct num_rule, qtl::expr>{} =
 	 NOTRACE( std::cerr << "_val=" << _val(ctx) << "\n"; )
    }) ];
 
+        static inline struct {
+	   std::set<std::string> symbols;
+	   std::string name;
+         } name_space;
+
  static auto const id_rule=expr_rule_t{} = 
    //   (name_rule >> -( lit("(") >>  expr_rule  /* >> (expr_rule % lit(",")) */ >> lit(")") ) )[ ([](auto& ctx){ 
      (name_rule >> -( lit("(") >  list_rule >  lit(")") ) )[ ([](auto& ctx){ 
        using boost::fusion::at_c;
-		NOTRACE(	  std::cerr << "id_rule " << "\n"; )
+		TRACE(	  std::cerr << "id_rule " << "\n"; )
 		NOTRACE( std::cout << "type(_attr): " <<  qtl::type_name<decltype(_attr(ctx))>() << "\n"; )
 		NOTRACE( std::cout << "type(_val): " << qtl::type_name<decltype(_val(ctx))>() << "\n"; )
                 NOTRACE( std::cout << "at_c<0>:" << qtl::type_name<decltype( at_c<0>(_attr(ctx)) )>() << "\n"; )
@@ -245,9 +250,18 @@ static auto const num_rule=x3::rule<struct num_rule, qtl::expr>{} =
 		//	  _val(ctx)=lex::number(lex::number::sem(std::string( boost::fusion::at_c<0>(_attr(ctx)).begin(),boost::fusion::at_c<0>(_attr(ctx)).end())));
 
        //	_val(ctx)=qtl::expr(qtl::op::lit,lex::number::sem("123"));
+
+#if 0 //def qtl::namespace
+	 if( !qtl::name_space.symbols.count( at_c<0>(_attr(ctx)) ) && qtl::name_space.symbols.count( qtl::name_space.name + "." + at_c<0>(_attr(ctx)) ) ){
+		_val(ctx)=qtl::expr(qtl::op::name,qtl::name_space.name + "." + at_c<0>(_attr(ctx)));
+	 }else{
+	            _val(ctx)=qtl::expr(qtl::op::name,at_c<0>(_attr(ctx)));
+	 }
+#else
        _val(ctx)=qtl::expr(qtl::op::name,at_c<0>(_attr(ctx)));
+#endif
        }
-		NOTRACE( std::cerr << "_val=" << _val(ctx) << "\n"; )
+       TRACE( std::cerr << "_val=" << _val(ctx) << "\n"; )
 	}) ];
 #endif
 
