@@ -37,6 +37,8 @@ namespace qtl{
   using x3::alnum;
   using x3::no_case;
 
+  using boost::fusion::at_c;
+
 
 #if 0
 inline static std::map<std::string,expr> dictionary={
@@ -115,7 +117,6 @@ using  namespace qtl::literals;
  static auto const assignment_rule=x3::rule<struct assignment, std::pair<std::string,qtl::expr>>{}=
     (name_rule >> lit("=") >> expr_rule)
   [ ([](auto& ctx){
-         using boost::fusion::at_c;
 	 NOTRACE( std::cerr << "assignment_rule " << __LINE__ << "\n"; )
 	 NOTRACE( std::cout << "type(_val): " << qtl::type_name<decltype(_val(ctx))>() << "\n"; )
 	 NOTRACE( std::cout << "type(_attr): " << qtl::type_name<decltype(_attr(ctx))>() << "\n"; )
@@ -230,7 +231,7 @@ static auto const alias_list=
 	     symtab[x.first.substr(0,f)][x.first.substr(f+sep.size())]=x.second;
            }
          }
-         TRACE(*/ qtl::cerr << "aliases=" << symtab << '\n'; )
+         TRACE( qtl::cerr << "aliases=" << symtab << '\n'; )
    })]
 	;
 

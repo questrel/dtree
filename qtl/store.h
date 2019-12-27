@@ -3459,10 +3459,10 @@ if( argc==1 || argv[1][0] == '<' ){
     long m=m2(pos[0])|m2(pos[1])|3;
     long s=next_power_2(pos.back()&m)+(pos.back()&~m);
 
-    TRACE( std::cout << pos << "->" << s << "=" << std::oct << s << std::dec << '\n'; )
+    TRACE( qtl::cout << pos << "->" << s << "=" << std::oct << s << std::dec << '\n'; )
 
-    TRACE( std::cout << m2(pos[0]) << "|" << m2(pos[1]) << "|3 = " << m << '\n'; )
-    TRACE( std::cout << "np2(" << (pos.back()&m) << ")+" << (pos.back()&~m) << "\n"; )
+    TRACE( qtl::cout << m2(pos[0]) << "|" << m2(pos[1]) << "|3 = " << m << '\n'; )
+    TRACE( qtl::cout << "np2(" << (pos.back()&m) << ")+" << (pos.back()&~m) << "\n"; )
     rnd.seekg(s);
     pos.back()=s;
   }

@@ -750,9 +750,9 @@ if( argc!=1 && argv[1][0] != '<' ){
 	NOTRACE( std::cout << "oo=" <<  so << '\n'; )
     }
     NOTRACE( std::cout << __LINE__ << '\n'; )    
-    TRACE( std::cout << "ss=" << ss << '\n'; )
-    TRACE( std::cout << "so=" << so << '\n'; )
-    TRACE( std::cout << "oo=" << oo << '\n'; )
+    TRACE( qtl::cout << "ss=" << ss << '\n'; )
+    TRACE( qtl::cout << "so=" << so << '\n'; )
+    TRACE( qtl::cout << "oo=" << oo << '\n'; )
     {
       lex::vector<lex::string>t=ss;
       TRACE( std::cout << "lex::vector<lex::string>(ss)=" << t << '\n'; )
@@ -760,27 +760,27 @@ if( argc!=1 && argv[1][0] != '<' ){
     }
     {
       std::vector<lex::string>t=oo;
-      TRACE( std::cout << "std::vector<lex::string>(oo)=" << t << '\n'; )
+      TRACE( qtl::cout << "std::vector<lex::string>(oo)=" << t << '\n'; )
       assert( t == so );
     }
     {
       std::vector<std::string>t=oo;
-      TRACE( std::cout << "std::vector<std::string(oo)=" << t << '\n'; )
+      TRACE( qtl::cout << "std::vector<std::string(oo)=" << t << '\n'; )
       assert( t == ss );
     }
     sss.push_back(ss);
-    NOTRACE(  std::cerr << "sss=" << sss << '\n' );
+    NOTRACE( qtl::cerr << "sss=" << sss << '\n' );
     sso.push_back(so);
-    NOTRACE(  std::cerr << "sso=" << sso << '\n' );
+    NOTRACE( qtl::cerr << "sso=" << sso << '\n' );
     soo.push_back(oo);
-    NOTRACE(  std::cerr << "soo=" << soo << '\n' );
+    NOTRACE( qtl::cerr << "soo=" << soo << '\n' );
     ooo.push_back(oo);
-    NOTRACE(  std::cerr << "ooo=" << ooo << '\n' );
+    NOTRACE( qtl::cerr << "ooo=" << ooo << '\n' );
   }
   //  exit(0);
-  TRACE( std::cout << sss << '\n'; )
-  TRACE( std::cout << ooo << '\n'; )
-  NOTRACE( std::cerr << "(std::vector<std::vector<std::string>>)ooo = " << (std::vector<std::vector<std::string>>)ooo << '\n'; )
+  TRACE( qtl::cout << sss << '\n'; )
+  TRACE( qtl::cout << ooo << '\n'; )
+  NOTRACE( qtl::cerr << "(std::vector<std::vector<std::string>>)ooo = " << (std::vector<std::vector<std::string>>)ooo << '\n'; )
   assert( (std::vector<std::vector<std::string>>)ooo == sss ); 
 #ifdef FUZZING
     exit(0);
