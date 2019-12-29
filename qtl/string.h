@@ -301,7 +301,17 @@ public:
      return ret;
   };
 
-  std_t& std_(){ if( !_opt ){ _opt=""s; } return *_opt; }
+  std_t& std_(){
+    //    if( !_opt ){ _opt=""s; } return *_opt;
+    if( !_opt ){
+      if( _this.size()==0 ){
+          _opt=""s;
+      }else{
+	_opt=std::string(_this.data(),_this.size());
+      }
+    }
+    return *_opt; 
+  }
   std_t std_()const{
     if( !_opt ){
       if( _this.size()==0 ){
@@ -445,6 +455,7 @@ public:
   string operator-(){
     NOTRACE( std::cerr << __PRETTY_FUNCTION__ << '(' << qtl::visible(*_opt) << ')' << '\n'; )
       if( empty()||is_null() ){ return *this; }
+    std_(); /*****/
       assert( _opt->data()==_this.data() );
     for( auto &c:*_opt ){
 #if 1

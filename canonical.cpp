@@ -54,6 +54,17 @@ static int compare_letters(const void *l1, const void *l2) {
   return *(char *) l1 - *(char *) l2;
 }
 
+// transform word to ASCII canonical form
+// returns pointer to terminal NUL in a->work
+char *make_ASCII_word(element_t *a) {
+  char c, *p = a->word, *q = a->work;
+  while (c = *p++)
+    if (isascii(c))
+      *q++ = c;
+  *q = 0;
+  return q;
+}
+
 // transform word to pure lowercase letters
 // returns pointer to terminal NUL in a->work
 char *make_dictionary_word(element_t *a) {
@@ -388,6 +399,7 @@ struct lookup_t {
   char *(*function)(element_t *);
   bool is_numeric = false;
 } lookup[] = {
+  {"ASCII_word", make_ASCII_word},
   {"consonancy", make_consonancy},
   {"consonant_list", make_consonant_list},
   {"dictionary_word", make_dictionary_word},
@@ -459,7 +471,7 @@ int main(int argc, char *argv[]) {
 	cout << sep << l.type << (l.is_numeric ? " double" : " varchar(255)");
       else 
 	cout << sep << l.type;
-      sep = ",";
+      sep = (CSV | SQL) ? "," : "\t";
     }
     if (SQL)
       cout << ")";
@@ -467,12 +479,6 @@ int main(int argc, char *argv[]) {
   }
   for (string line; getline(in, line); ) {
 
-    if (CSV)
-      cout << "\"" << escape(line.c_str(), "\\,\"") << "\"";
-    else if (SQL)
-      cout << "insert into word values '" << escape(line.c_str(), "\\,'") << "'";
-    else 
-      cout << line;
     for (auto l : lookup) {
       element_t a;
       a.word = const_cast<char *>(line.c_str());

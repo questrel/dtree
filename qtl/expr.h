@@ -240,35 +240,18 @@ static auto const num_rule=x3::rule<struct num_rule, qtl::expr>{} =
        if(  at_c<1>(_attr(ctx)) ){
 	 NOTRACE( std::cout << "type(*at_c<1>) " << qtl::type_name<decltype( *at_c<1>(_attr(ctx)) )>() << "\n"; )
          NOTRACE( std::cout << "at_c<1>.size()=" <<  at_c<1>(_attr(ctx))->size() << "\n"; )
-	   //	   _val(ctx)=qtl::expr(qtl::operation(qtl::op::function,at_c<0>(_attr(ctx))),{*at_c<1>(_attr(ctx))});
 	   _val(ctx)=qtl::expr(qtl::operation(qtl::op::function,at_c<0>(_attr(ctx))),*at_c<1>(_attr(ctx)));
-	   //           _val(ctx)=qtl::expr(qtl::op::lit,lex::number::sem("123"));
        }else{
-
-		//    	  std::cout << "_where:" <<  _where(ctx) << "\n";
-		//    	  std::cout << "_attr:" <<  _attr(ctx) << "\n";
-		//	  _val(ctx)=lex::number(lex::number::sem(std::string( boost::fusion::at_c<0>(_attr(ctx)).begin(),boost::fusion::at_c<0>(_attr(ctx)).end())));
-
-       //	_val(ctx)=qtl::expr(qtl::op::lit,lex::number::sem("123"));
-
-#if 0 //def qtl::namespace
-	 if( !qtl::name_space.symbols.count( at_c<0>(_attr(ctx)) ) && qtl::name_space.symbols.count( qtl::name_space.name + "." + at_c<0>(_attr(ctx)) ) ){
-		_val(ctx)=qtl::expr(qtl::op::name,qtl::name_space.name + "." + at_c<0>(_attr(ctx)));
-	 }else{
-	            _val(ctx)=qtl::expr(qtl::op::name,at_c<0>(_attr(ctx)));
-	 }
-#else
-       _val(ctx)=qtl::expr(qtl::op::name,at_c<0>(_attr(ctx)));
-#endif
+          _val(ctx)=qtl::expr(qtl::op::name,at_c<0>(_attr(ctx)));
        }
-       TRACE( std::cerr << "_val=" << _val(ctx) << "\n"; )
+       NOTRACE( std::cerr << "_val=" << _val(ctx) << "\n"; )
 	}) ];
 #endif
 
 #if 1
  static auto const atom_rule=
    expr_rule_t{}=
-(col_rule | lit_rule | id_rule | '(' > expr_rule > ')')
+   (col_rule | lit_rule | id_rule | '(' > expr_rule > ')')
 #if 0
   [ ([](auto& ctx){
 	 NOTRACE( std::cerr << "atom_rule " << __LINE__ << "\n"; )
@@ -943,7 +926,7 @@ namespace qtl{
                std::cout << "stringify: " << result.stringify() << std::endl;
                std::cout << "eval: " << result.eval({{"a",1_s},{"b",2_s},{"c",3_s}}) << std::endl;
 	       auto b=result.bind({
-		   {"col1",1_column},{"col2",2_column},{"col3",3_column},
+		   {"col1",1_col},{"col2",2_col},{"col3",3_col},
 		 });
                if( b ){
 		 std::cout << "bind: " << ((expr)b) << std::endl;

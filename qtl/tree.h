@@ -594,7 +594,7 @@ static inline ps stri_name(const operation &o, const std::string &s,const Vp &v)
 template<typename Vp=vec<ps>>
 static inline ps stri_column(const operation &o, const std::string &s,const Vp &v){
   //  return ps( s+"."+ *o.identifier,o.precedence());
-  return ps( *o.identifier + "_column",o.precedence());
+  return ps( *o.identifier + "_" + s,o.precedence());
 }
 template<typename Vp=std::vector<ps>>
 static inline ps stri_func(const operation &o,const std::string& s,const Vp &v){
@@ -987,7 +987,7 @@ template<typename V=qtl::interval,typename V1=std::vector<V>>
      expr operator""_name(const char *c){
        return expr(qtl::op::name,std::string(c));
      }
-     expr operator""_column(unsigned long long int i){
+     expr operator""_col(unsigned long long int i){
         std::stringstream s;
 	s << i;
         return expr(qtl::op::column,s.str());

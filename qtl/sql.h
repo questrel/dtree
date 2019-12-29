@@ -67,47 +67,20 @@ using  namespace qtl::literals;
   inline static std::map<std::string,std::map<std::string,expr>> symtab={
   {"",
    {
-         {"col0",0_column},
-         {"col1",1_column},
-         {"col2",2_column},
-         {"col3",3_column},
-         {"col4",4_column},
-         {"col5",5_column},
-         {"col6",6_column},
-         {"col7",7_column},
-         {"col8",8_column},
-         {"col9",9_column},
+         {"col0",0_col},
+         {"col1",1_col},
+         {"col2",2_col},
+         {"col3",3_col},
+         {"col4",4_col},
+         {"col5",5_col},
+         {"col6",6_col},
+         {"col7",7_col},
+         {"col8",8_col},
+         {"col9",9_col},
    }
   },
  };
  inline static std::string sep(".");
- template<typename S=std::string, typename V=qtl::expr, const S &separator=sep>
- std::map<S,V> lookup(const std::map<S,std::map<S,V>> &symtab,const S &name=""){
-   std::map<S,V> ret;
-   if( auto f=symtab.find(""); f!=symtab.end() ){
-     ret = f->second;
-   }
-   if( !name.empty() ){
-     if( auto f=symtab.find(name); f!=symtab.end() ){
-       for( const auto [key,value]:f->second ){
-	 ret[name + separator + key] = value;
-	 if( !ret.count(key) ){
-            ret[key]=value;
-	 }
-       }
-     }
-  }
-  return ret;
- }
-#if 0
-  template<typename S=std::string, typename E=qtl::expr, typename I=interval>
- std::map<S,I> lookup(const std::map<S,E> &dictionary){
-  for( const auto [key,value]:symtab[dictionary] ){
-    ret[key]=value.eval();
-  }
-  return ret;
- }
-#endif
   
 #define as_string( p ) 	( x3::rule<struct as_string, std::string>{}= ( raw[ p ] [ to_string ] ) )
 //#define copy_expr( p ) 	( x3::rule<struct _, qtl::expr>{}= ( p [ copy_attr ] ) )
@@ -299,7 +272,6 @@ static auto const insert_clause=
 	 auto into= at_c<0>( _attr(ctx) );
 	 std::cout <<  "INTO " << into << '\n';
 	 std::vector<lex::string> v;
-	 //	 auto dict=lookup(symtab, *at_c<0>( _attr(ctx) ).identifier);
 	 for( auto x: at_c<1>( _attr(ctx) ) ){
 	   std::cout <<  x  << '\n';
            auto y=x.bind(symtab[into]).eval(valtab[into]);
@@ -346,7 +318,6 @@ static auto const select_clause=
 	   std::cout << "WHERE " << at_c<2>( _attr(ctx) )->stringify() <<'\n';
          }
 	 NOTRACE( std::cout << file << '\n'; );
-	 //         auto dict=lookup(symtab,*at_c<1>( _attr(ctx) ).identifier);
          auto v=file[ from ];
          if( at_c<2>(_attr(ctx)) ){
            v=v[at_c<2>(_attr(ctx))->bind( symtab[from] )];
@@ -391,7 +362,6 @@ static auto const delete_clause=
 	 if( at_c<1>(_attr(ctx)) ){
                  std::cout <<  "WHERE " << at_c<1>( _attr(ctx) )->stringify() << '\n'; 
 	  }
-	   //	     auto dict=lookup(symtab, *at_c<0>( _attr(ctx) ).identifier );
 	   std::vector<std::vector<lex::string>>del;
 	   qtl::expr where;
 	   if( at_c<1>(_attr(ctx)) ){
