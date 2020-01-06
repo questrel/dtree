@@ -246,6 +246,7 @@ static auto const create_table_clause=
 	 std::cout << "CREATE TABLE ";
 	 std::string prefix = at_c<0>(_attr(ctx) );
 	 std::cout << prefix << '\n';
+	 std::vector<qtl::expr> v;
 	 int col=0;
 	 for( auto x: at_c<1>( _attr(ctx) ) ){
 	   ++col;
@@ -253,7 +254,10 @@ static auto const create_table_clause=
 	   auto e=qtl::expr(op::column,std::to_string(col));
            symtab[prefix][x] = e;
            symtab[""][prefix + sep + x] = e;
+	   v.push_back(e);
 	 }
+	 auto e=qtl::expr(qtl::operation(op::function,"PRINT"s), v);
+	 symtab[prefix]["*"s] = e;
 	 TRACE( qtl::cout << symtab << '\n'; );
   })]
 ;
@@ -327,12 +331,17 @@ static auto const select_clause=
 	   NOTRACE( continue; /* profile just the query with no output */)
 	    NOTRACE( std::cout << __LINE__ << "\n"; )
 	    if( at_c<0>( _attr(ctx)).which() == 0 ){
-	      int i=0;
-	      for( auto x:r ){
-		if( i>1 ){ std::cout << ", "; }
-		if( i!=0 ){ std::cout << x; }
-		++i;
-              }
+	      if( auto s0=symtab.find(from); s0 != symtab.end() && s0->second.find("*") != s0->second.end() ) {
+                auto p=store::path()+r;
+	        s0->second["*"s].eval(valtab[from],p);
+	      }else{
+	        int i=0;
+	        for( auto x:r ){
+		  if( i>1 ){ std::cout << ", "; }
+		  if( i!=0 ){ std::cout << x; }
+		  ++i;
+                }
+	      }
 	    }else{
 	      auto p=store::path()+r;
 	      NOTRACE( std::cout << p << '\n');

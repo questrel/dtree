@@ -255,7 +255,7 @@ class operation{
 
   template<typename... S_>
   operand_t eval(const std::vector<operand_t> &v,const S_&... s_)const{
-	if( !cachevalue ){
+        if( !cachevalue || !v.empty() ){
 	  if( o == op::greater ){
            NOTRACE( std::cout << __PRETTY_FUNCTION__ << '\n'; )
            NOTRACE( std::cout << "optable.at(" << (int)o << ").eval)(" << *this << "," << v << ",s_...)" << 'n'; )
@@ -437,13 +437,18 @@ inline static const std::map<std::string,std::function<operand_t(const std::vect
 	    }
 	  }
           return operand_t(std::string(s.str()));
-       }}
+	 }},
+       {"PRINT",[](const std::vector<operand_t> &v){
+	   int i=0;
+	   qtl::cout << v;
+	   return kleen::T;
+	}},
 };
 
 #define Xfunc(n,o) T(n,o,					      \
 		   if( !t.cachevalue ){ \
                        if( auto p=functab.find(*t.identifier); p!=functab.end() ){ \
-			 t.cachevalue = (p->second)(v);	\
+			 return (p->second)(v);	\
                        }else{ \
                          std::cerr << "unknown function " << *t.identifier << "()\n";  \
 		         return V(nullptr); \
