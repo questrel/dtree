@@ -208,6 +208,11 @@ static auto const alias_list=
    })]
 	;
 
+static inline std::map<std::string,bool> is_numeric={
+	{"double"s,true},
+	{"varchare"s,false},
+};
+
 static auto const create_table_clause=
   (
     no_case[ lit("CREATE") > lit ("TABLE") ]
@@ -220,15 +225,9 @@ static auto const create_table_clause=
 	(
 	  name_rule
 	  >>
-	  (
-	     (omit[
-#if 0
-		   *alnum >> - ('(' >> *alnum >> ')')
-#else
-		   *id_rule
-#endif
-	     ])
-	  )
+	  name_rule
+	  >>
+	  *expr_rule
 	)
 	%
         ','
@@ -248,12 +247,20 @@ static auto const create_table_clause=
 	 std::cout << prefix << '\n';
 	 std::vector<qtl::expr> v;
 	 int col=0;
-	 for( auto x: at_c<1>( _attr(ctx) ) ){
-	   ++col;
-	   std::cout << "ALIAS " << prefix << "." << x  << " = column(" << col << ")" << '\n';
+	 for( auto a: at_c<1>( _attr(ctx) ) ){
+           ++col;
+	   NOTRACE( std::cout << "type(a): " << qtl::type_name<decltype(a)>() << "\n";) 
+	   auto x=at_c<0>(a);
+	   auto y=at_c<1>(a);
+	   NOTRACE( std::cout << "type(x): " << qtl::type_name<decltype(x)>() << "\n"; )
+    	   NOTRACE( std::cout << "type(x): " << qtl::type_name<decltype(y)>() << "\n";) 
+	     qtl::cout << "ALIAS " << prefix << "." << x << " = column(" << col << ")" << '\n';
 	   auto e=qtl::expr(op::column,std::to_string(col));
-           symtab[prefix][x] = e;
-           symtab[""][prefix + sep + x] = e;
+	   symtab[prefix][x] = e;
+	   symtab[""][prefix + sep + x] = e;
+	   if( is_numeric[y] ){
+	     e=qtl::expr(qtl::operation(op::function,"NUMERIC_TO_STRING"s), {e});
+	   }
 	   v.push_back(e);
 	 }
 	 auto e=qtl::expr(qtl::operation(op::function,"PRINT"s), v);
