@@ -479,6 +479,9 @@ int main(int argc, char *argv[]) {
   }
   for (string line; getline(in, line); ) {
 
+    const char *sep = "";
+    if (SQL)
+      cout << "insert into word (";
     for (auto l : lookup) {
       element_t a;
       a.word = const_cast<char *>(line.c_str());
@@ -486,18 +489,21 @@ int main(int argc, char *argv[]) {
       l.function(&a);
       if (CSV) {
 	if (l.is_numeric)
-	  cout << "," << a.work;
+	  cout << sep << a.work;
 	else
-	  cout << ",\"" << escape(a.work, "\\,\"") << "\"";
+	  cout << sep << "\"" << escape(a.work, "\\,\"") << "\"";
       } else if (SQL) {
 	if (l.is_numeric)
-	  cout << "," << a.work;
+	  cout << sep << a.work;
 	else
-	  cout << ",'" << escape(a.work, "\\,'") << "'";
+	  cout << sep << "'" << escape(a.work, "\\,'") << "'";
       } else
-        cout << '\t' << a.work;
+        cout << sep << a.work;
       free(a.work);
+      sep = (CSV | SQL) ? "," : "\t";
     }
+    if (SQL)
+      cout << ")";
     cout << endl;
   }
 }
