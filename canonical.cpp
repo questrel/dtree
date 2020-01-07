@@ -432,13 +432,17 @@ string escape(const char *s, const char *escape_chars) {
 
 int main(int argc, char *argv[]) {
 
-  for (short c; (c = getopt(argc, argv, ":CSv")) != -1; )
+  const char *table_name = "word";
+  for (short c; (c = getopt(argc, argv, ":CSt:v")) != -1; )
     switch (c) {
     case 'C':
       CSV = true;
       break;
     case 'S':
       SQL = true;
+      break;
+    case 't':
+      table_name = optarg;
       break;
     case 'v':
       ++verbose;
@@ -463,7 +467,7 @@ int main(int argc, char *argv[]) {
   if (verbose) {
     const char *sep = "";
     if (SQL)
-      cout << "create table word (";
+      cout << "create table " << table_name << " (";
     for (auto l : lookup) {
       if (CSV)
 	cout << sep << "\"" << l.type << "\"";
@@ -481,7 +485,7 @@ int main(int argc, char *argv[]) {
 
     const char *sep = "";
     if (SQL)
-      cout << "insert into word (";
+      cout << "insert into " << table_name << " values (";
     for (auto l : lookup) {
       element_t a;
       a.word = const_cast<char *>(line.c_str());
