@@ -11,6 +11,7 @@ using namespace std;
 char usage[] =
 " [-C(SV)]"
 " [-S(QL)]"
+" [-t(able) name]"
 " [-v(erbose)] (output column names before outputting column values)"
 " [file]";
 
