@@ -271,7 +271,7 @@ static auto const create_table_clause=
 static inline qtl::store file;
 
 static auto const insert_clause=
-  (no_case[ lit("INSERT") > lit("INTO") ] > name_rule > no_case[ lit("VALUES") ] > list_rule)
+  (no_case[ lit("INSERT") > lit("INTO") ] > name_rule > no_case[ lit("VALUES")|'(' ] > list_rule > -char_(')'))
   [ ([](auto& ctx){
 	 TRACE( std::cerr << "insert_clause" << __LINE__ << "\n"; )
 	 NOTRACE( std::cout << "type(_val): " << qtl::type_name<decltype(_val(ctx))>() << "\n"; )
