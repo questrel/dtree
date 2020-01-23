@@ -6,9 +6,9 @@
 #include <boost/core/demangle.hpp>
 #include <iostream>
 #include <utility>
-#ifndef __APPLE__ // my include paths have gotten messed up. Hopefully the Docker installation will fix this 
+//#if __has_include(<charconv>)
 #include <charconv>
-#endif
+//#endif
 #include "string.h"
 #include "out.h"
 #ifndef __clang__
@@ -250,10 +250,10 @@ public:
       constexpr auto exp = std::numeric_limits<FloatingType>::max_exponent10;
       constexpr auto expdigits=exp<10?1:exp<100?2:exp<1000?3:exp<10000?4:10;
       char c[mantdigits+expdigits+6];
-      #if 1
-      snprintf(c,sizeof(c),"%.*e",mantdigits-1-1,f);
-      #else
+      #if __has_include( <charconv> ) && 0
            auto r=to_chars(c,&c[sizeof(c)],f,std::chars_format::scientific,mantdigits-2);
+      #else
+          snprintf(c,sizeof(c),"%.*e",mantdigits-1-1,f);
       #endif
 	   NOTRACE( std::cerr << __PRETTY_FUNCTION__ << "(" << f << ")" << c << std::endl; )
       *this=sem(c);

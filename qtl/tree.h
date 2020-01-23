@@ -440,7 +440,14 @@ inline static const std::map<std::string,std::function<operand_t(const std::vect
 	 }},
        {"PRINT",[](const std::vector<operand_t> &v){
 	   int i=0;
-	   qtl::cout << v;
+	   auto sep="";
+	   qtl::cout << "{ ";
+	   for( auto x:v ){
+	     qtl::cout << sep;
+	     qtl::cout << x;
+	     sep = ", ";
+	   }
+	   qtl::cout << "}\n";
 	   return kleen::T;
 	}},
 };
