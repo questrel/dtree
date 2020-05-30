@@ -11,8 +11,7 @@ using namespace std;
 char usage[] =
 " [-C(SV)]"
 " [-S(QL)]"
-" [-t(able) name]"
-" [-v(erbose)] (output column names before outputting column values)"
+" [-v(erbose)]"
 " [file]";
 
 bool CSV = false;
@@ -23,6 +22,8 @@ struct element_t {
   char *word;
   char *work;
 };
+
+#pragma GCC diagnostic ignored "-Wparentheses"
 
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
@@ -53,17 +54,6 @@ bool isxvowel(unsigned char c) {
 // subroutine for comparing letters
 static int compare_letters(const void *l1, const void *l2) {
   return *(char *) l1 - *(char *) l2;
-}
-
-// transform word to ASCII canonical form
-// returns pointer to terminal NUL in a->work
-char *make_ASCII_word(element_t *a) {
-  char c, *p = a->word, *q = a->work;
-  while (c = *p++)
-    if (isascii(c))
-      *q++ = c;
-  *q = 0;
-  return q;
 }
 
 // transform word to pure lowercase letters
@@ -400,7 +390,6 @@ struct lookup_t {
   char *(*function)(element_t *);
   bool is_numeric = false;
 } lookup[] = {
-  {"ASCII_word", make_ASCII_word},
   {"consonancy", make_consonancy},
   {"consonant_list", make_consonant_list},
   {"dictionary_word", make_dictionary_word},
@@ -433,17 +422,13 @@ string escape(const char *s, const char *escape_chars) {
 
 int main(int argc, char *argv[]) {
 
-  const char *table_name = "word";
-  for (short c; (c = getopt(argc, argv, ":CSt:v")) != -1; )
+  for (short c; (c = getopt(argc, argv, ":CSv")) != -1; )
     switch (c) {
     case 'C':
       CSV = true;
       break;
     case 'S':
       SQL = true;
-      break;
-    case 't':
-      table_name = optarg;
       break;
     case 'v':
       ++verbose;
@@ -465,28 +450,14 @@ int main(int argc, char *argv[]) {
     exit(2);
   }
   init_tables();
-  if (verbose) {
-    const char *sep = "";
-    if (SQL)
-      cout << "create table " << table_name << " (";
-    for (auto l : lookup) {
-      if (CSV)
-	cout << sep << "\"" << l.type << "\"";
-      else if (SQL)
-	cout << sep << l.type << (l.is_numeric ? " double" : " varchar(255)");
-      else 
-	cout << sep << l.type;
-      sep = (CSV | SQL) ? "," : "\t";
-    }
-    if (SQL)
-      cout << ")";
-    cout << endl;
-  }
   for (string line; getline(in, line); ) {
 
-    const char *sep = "";
-    if (SQL)
-      cout << "insert into " << table_name << " values (";
+    if (CSV)
+      cout << "\"" << escape(line.c_str(), "\\,\"") << "\"";
+    else if (SQL)
+      cout << "insert into word values '" << escape(line.c_str(), "\\,'") << "'";
+    else 
+      cout << line;
     for (auto l : lookup) {
       element_t a;
       a.word = const_cast<char *>(line.c_str());
@@ -494,21 +465,20 @@ int main(int argc, char *argv[]) {
       l.function(&a);
       if (CSV) {
 	if (l.is_numeric)
-	  cout << sep << a.work;
+	  cout << "," << a.work;
 	else
-	  cout << sep << "\"" << escape(a.work, "\\,\"") << "\"";
+	  cout << ",\"" << escape(a.work, "\\,\"") << "\"";
       } else if (SQL) {
 	if (l.is_numeric)
-	  cout << sep << a.work;
+	  cout << "," << a.work;
 	else
-	  cout << sep << "'" << escape(a.work, "\\,'") << "'";
-      } else
-        cout << sep << a.work;
+	  cout << ",'" << escape(a.work, "\\,'") << "'";
+      } else if (verbose)
+        cout << '\t' << l.type << "=" << a.work;
+      else
+        cout << '\t' << a.work;
       free(a.work);
-      sep = (CSV | SQL) ? "," : "\t";
     }
-    if (SQL)
-      cout << ")";
     cout << endl;
   }
 }
