@@ -16,6 +16,8 @@ char usage[] =
 " [-v(erbose)] (output column names before outputting column values)"
 " [file]";
 
+#pragma GCC diagnostic ignored "-Wparentheses"
+
 bool CSV = false;
 bool SQL = false;
 short verbose = 0;
