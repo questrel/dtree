@@ -25,7 +25,7 @@ On Ubuntu 18
 
 You can use the Dockerfile in this repo to run dtree as a Docker image. 
 
-In the same directory as your Dockerfile, build your image by running `docker build --tag dtree:0.1 .` (The `0.1` is your version number.) 
+In the same directory as your Dockerfile, build your image by running `sudo docker build --tag dtree:0.1 .` (The `0.1` is your version number.) 
 
 Then run the image with `sudo docker run -it dtree:0.1`.
 
