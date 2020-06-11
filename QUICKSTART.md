@@ -29,7 +29,7 @@ In the same directory as your Dockerfile, build your image by running `sudo dock
 
 Then run the image with `sudo docker run -it dtree:0.1`.
 
-In the image, run `sudo bash test.bash`. 
+In the image, run `bash test.bash`. 
 
 Note: `test.bash` may take several minutes to run and may take up to 32 GB
 
