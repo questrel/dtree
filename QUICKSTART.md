@@ -21,46 +21,27 @@ On Ubuntu 18
 * `git clone https://github.com/questrel/dtree.git`
 
 
-```bash
-add-apt-repository ppa:mhier/libboost-latest
-apt update
-apt-get --purge remove libboost-all-dev libboost-dev libboost-doc
-apt-get install -f
-apt autoremove
-dpkg --configure -a
-apt-get clean
-apt-get update
-apt-get install libboost1.70-dev
-add-apt-repository ppa:ubuntu-toolchain-r/test
-apt-get update
-apt-get install g++-9
-```
+## Running dtree in Docker
 
-# Installing dtree under Windows
-```bash
-1. Install Ubuntu
-https://docs.microsoft.com/en-us/windows/wsl/install-win10
+You can use the Dockerfile in this repo to run dtree as a Docker image. 
 
-2. Make sure everything is up-to-date
-sudo apt-get update && sudo apt-get upgrade
+In the same directory as your Dockerfile, build your image by running `docker build --tag dtree:0.1`. (The `0.1` is your version number.) 
 
-3. Install /usr/share/dict/words
-sudo apt-get install wamerican
+Then run the image with `sudo docker run -it dtree:0.1`.
 
-4. Install make
-sudo apt-get install make
+In the image, run `sudo bash test.bash`. 
 
-5. Prerequisites for clang
-sudo apt install build-essential xz-utils curl
+Note: `test.bash` may take several minutes to run and may take up to 32 GB
 
-5. Install clang (9.0.0) [via https://solarianprogrammer.com/2017/12/13/linux-wsl-install-clang-libcpp-compile-cpp-17-programs/]
-curl -SL http://releases.llvm.org/9.0.0/clang+llvm-9.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz | tar -xJC .
-mv clang+llvm-9.0.0-x86_64-linux-gnu-ubuntu-18.04 clang_9.0.0
-sudo mv clang_9.0.0 /usr/local
-export PATH=/usr/local/clang_9.0.0/bin:$PATH
-export LD_LIBRARY_PATH=/usr/local/clang_9.0.0/lib:$LD_LIBRARY_PATH
-sudo ldconfig
+If everything has gone well, you should eventually see output like 
 
-6. Install boost
-sudo apt-get install libboost-all-dev
-```
+````
+SELECT ASCII_word
+NUMERIC_TO_STRING(letter_product,letter_sum)
+FROM word
+WHERE letter_product*letter_sum<=letter_product+letter_sum
+"A"_s,"1, 1"_s,
+````
+
+You can test the query by entering `SELECT *
+FROM word`. 
