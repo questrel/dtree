@@ -1,4 +1,3 @@
-
 #include <algorithm> // for reverse<>()
 #include <cctype>
 #include <cstring>
@@ -6,20 +5,27 @@
 #include <iostream>
 #include <string>
 #include <unistd.h>
+#include <unordered_set>
+#include <vector>
 
 using namespace std;
 
 char usage[] =
 " [-C(SV)]"
 " [-S(QL)]"
+" [-s(ubstrings)]"
 " [-t(able) name]"
 " [-v(erbose)] (output column names before outputting column values)"
 " [file]";
 
-#pragma GCC diagnostic ignored "-Wparentheses"
+typedef unsigned long long mask_t;
+const size_t mask_length = sizeof(mask_t) * 8 / 5;
+
 
 bool CSV = false;
 bool SQL = false;
+bool substrings = false;
+const char *table_name = "word";
 short verbose = 0;
 
 struct element_t {
@@ -391,11 +397,41 @@ char *make_shiftword(element_t *a) {
         shift = 'a' - c;
       c += shift;
       if (c < 'a') // letters less than first lettrer are shifted to end of alphabet
-        c += 26;
+        c += 26; 
       *q++ = c;
     }
   *q = 0;
   return q;
+}
+
+void generate_substrings(string &word, vector<string> &substrings) {
+  unordered_set<mask_t> exists[mask_length + 1];
+
+  for (size_t length = 1; length <= mask_length ; ++length) {
+    for (const char *p = word.c_str(); p[length - 1]; ++p) {
+      mask_t mask = 1;
+      bool good = true;
+      for (size_t i = length; i-- && good; ) { // insert letters in reverse order for ease of unpacking
+	if (isupper(p[i]))
+	  mask = (mask << 5) | (tolower(p[i]) - 'a');
+	else if (islower(p[i]))
+	  mask = (mask << 5) | (p[i] - 'a');
+	else
+	  good = false;
+      }
+      if (good)
+	exists[length].insert(mask);
+    }
+  }
+  for (size_t length = 1; length <= mask_length ; ++length)
+    for (mask_t m : exists[length]) {
+      string w;
+      while (m != 1) {
+	w += 'a' + (m & 0x1f);
+	m >>= 5;
+      }
+      substrings.push_back(w);
+    }
 }
 
 struct lookup_t {
@@ -434,16 +470,48 @@ string escape(const char *s, const char *escape_chars) {
   return retval;
 }
 
+// output one line, which is SQL insert statement for word, or CSV of word, or raw form of word
+void process_word(const string &word) {
+  const char *sep = "";
+  if (SQL)
+    cout << "insert into " << table_name << " values (";
+  for (auto l : lookup) {
+    element_t a;
+    a.word = const_cast<char *>(word.c_str());
+    a.work = reinterpret_cast<char *>(malloc(word.length() * 10)); 
+    l.function(&a);
+    if (CSV) {
+      if (l.is_numeric)
+	cout << sep << a.work;
+      else
+	cout << sep << "\"" << escape(a.work, "\\,\"") << "\"";
+    } else if (SQL) {
+      if (l.is_numeric)
+	cout << sep << a.work;
+      else
+	cout << sep << "'" << escape(a.work, "\\,'") << "'";
+    } else
+      cout << sep << a.work;
+    free(a.work);
+    sep = (CSV | SQL) ? "," : "\t";
+  }
+  if (SQL)
+    cout << ")";
+  cout << endl;
+}
+
 int main(int argc, char *argv[]) {
 
-  const char *table_name = "word";
-  for (short c; (c = getopt(argc, argv, ":CSt:v")) != -1; )
+  for (short c; (c = getopt(argc, argv, ":CSst:v")) != -1; )
     switch (c) {
     case 'C':
       CSV = true;
       break;
     case 'S':
       SQL = true;
+      break;
+    case 's':
+      substrings = true;
       break;
     case 't':
       table_name = optarg;
@@ -477,7 +545,7 @@ int main(int argc, char *argv[]) {
 	cout << sep << "\"" << l.type << "\"";
       else if (SQL)
 	cout << sep << l.type << (l.is_numeric ? " double" : " varchar(255)");
-      else
+      else 
 	cout << sep << l.type;
       sep = (CSV | SQL) ? "," : "\t";
     }
@@ -485,33 +553,14 @@ int main(int argc, char *argv[]) {
       cout << ")";
     cout << endl;
   }
-  for (string line; getline(in, line); ) {
-
-    const char *sep = "";
-    if (SQL)
-      cout << "insert into " << table_name << " values (";
-    for (auto l : lookup) {
-      element_t a;
-      a.word = const_cast<char *>(line.c_str());
-      a.work = reinterpret_cast<char *>(malloc(line.length() * 10));
-      l.function(&a);
-      if (CSV) {
-	if (l.is_numeric)
-	  cout << sep << a.work;
-	else
-	  cout << sep << "\"" << escape(a.work, "\\,\"") << "\"";
-      } else if (SQL) {
-	if (l.is_numeric)
-	  cout << sep << a.work;
-	else
-	  cout << sep << "'" << escape(a.work, "\\,'") << "'";
-      } else
-        cout << sep << a.work;
-      free(a.work);
-      sep = (CSV | SQL) ? "," : "\t";
+  for (string word; getline(in, word); ) {
+    if (!substrings)
+      process_word(word);
+    else {
+      vector<string> generated_substrings;
+      generate_substrings(word, generated_substrings);
+      for (string substring : generated_substrings)
+	process_word(substring);
     }
-    if (SQL)
-      cout << ")";
-    cout << endl;
   }
 }
