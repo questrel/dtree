@@ -438,8 +438,9 @@ struct lookup_t {
   const char *type;
   char *(*function)(element_t *);
   bool is_numeric = false;
+  bool is_primary = false;
 } lookup[] = {
-  {"ASCII_word", make_ASCII_word},
+  {"ASCII_word", make_ASCII_word, false, true},
   {"consonancy", make_consonancy},
   {"consonant_list", make_consonant_list},
   {"dictionary_word", make_dictionary_word},
@@ -471,13 +472,13 @@ string escape(const char *s, const char *escape_chars) {
 }
 
 // output one line, which is SQL insert statement for word, or CSV of word, or raw form of word
-void process_word(const string &word) {
+void process_word(const string &primary_word, const string &word) {
   const char *sep = "";
   if (SQL)
     cout << "insert into " << table_name << " values (";
   for (auto l : lookup) {
     element_t a;
-    a.word = const_cast<char *>(word.c_str());
+    a.word = const_cast<char *>(l.is_primary ? primary_word.c_str() : word.c_str());
     a.work = reinterpret_cast<char *>(malloc(word.length() * 10)); 
     l.function(&a);
     if (CSV) {
@@ -542,11 +543,12 @@ int main(int argc, char *argv[]) {
       cout << "create table " << table_name << " (";
     for (auto l : lookup) {
       if (CSV)
-	cout << sep << "\"" << l.type << "\"";
+	cout << sep << "\"" << ((!l.is_primary && substrings) ? "substring_" : "") << l.type << "\"";
       else if (SQL)
-	cout << sep << l.type << (l.is_numeric ? " double" : " varchar(255)");
+	cout << sep << ((!l.is_primary && substrings) ? "substring_" : "") << l.type
+	  << (l.is_numeric ? " double" : " varchar(255)");
       else 
-	cout << sep << l.type;
+	cout << sep << ((!l.is_primary && substrings) ? "substring_" : "") << l.type;
       sep = (CSV | SQL) ? "," : "\t";
     }
     if (SQL)
@@ -555,12 +557,12 @@ int main(int argc, char *argv[]) {
   }
   for (string word; getline(in, word); ) {
     if (!substrings)
-      process_word(word);
+      process_word(word, word);
     else {
       vector<string> generated_substrings;
       generate_substrings(word, generated_substrings);
       for (string substring : generated_substrings)
-	process_word(substring);
+	process_word(word, substring);
     }
   }
 }
