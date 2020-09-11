@@ -435,6 +435,22 @@ void generate_substrings(string &word, vector<string> &substrings) {
     }
 }
 
+void length_limited_power_set(vector<string> &subsets, string str, int index = 0, string curr = "")
+{
+  if (index == str.length())
+    // base case
+    subsets.push_back(curr);
+  else {
+    // Two cases for every character
+    // (1) We consider the character as part of current subset
+    // (2) We do not consider current character as part of current subset
+    // do not build subsets longer than max_subset_length
+    if (max_subset_length != 0 && curr.size() < max_subset_length)
+      length_limited_power_set(subsets, str, index + 1, curr + str[index]);
+    length_limited_power_set(subsets, str, index + 1, curr);
+  }
+}
+
 void generate_subsets(string &word, vector<string> &subsets) {
   unordered_set<mask_t> exists[mask_length + 1];
 
@@ -450,16 +466,7 @@ void generate_subsets(string &word, vector<string> &subsets) {
     letters += 'a' + x;
     y &= ~(1 << x);
   }
-  for (mask_t m = 1; m != 1 << letters.size(); ++m) {
-    string w;
-    for (mask_t y = m; y; ) {
-      int x = ffs(y) - 1;
-      w += letters[x];
-      y &= ~(1 << x);
-    }
-    if (w.size() <= max_subset_length)
-      subsets.push_back(w);
-  }
+  length_limited_power_set(subsets, letters);
 }
 
 struct lookup_t {
