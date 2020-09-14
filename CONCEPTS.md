@@ -2,7 +2,9 @@
 
 Library is header-only\
 requires --std=c++17\
-depends on boost::spirit::X3 and boost::multiprecision::cpp_dec_float (if you want decfloat support)\
+depends on boost::spirit::X3 (and boost::multiprecision::cpp_dec_float if you want decfloat support)\
+clang version 7.0.1 requires BOOST_LIB_VERSION "1_69" SPIRIT_X3_VERSION 0x3003 \
+clang version 10.0.0 requires BOOST_LIB_VERSION "1_73"  SPIRIT_X3_VERSION 0x3004 \
 (dependence on boost::core::demangle being deprecated in favor of `__PRETTY_FUNCTION__`\
 This may reduce portability of our output formats, though it has been tested under clang and g++)\
 ~~todo: get g++ compilations working again (which started failing for other unknown reasons)~~
