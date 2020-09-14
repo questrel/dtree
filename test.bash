@@ -1,7 +1,7 @@
 #!/bin/bash -x
 # run this script in the same directory as your makefile!
 set -x
-make -j5 sql.test.out
+make sql.test.out
 if [[ ! -s sql.dat.99 ]] ; then 
    make canonical.out
    rm *.map # shared map not working
