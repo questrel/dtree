@@ -87,19 +87,19 @@ operator<<(std::ostream &os, const std::set<T> &obj){
 }
 template<typename T>
 #define BASE_T std::vector<T>
-  class sample: public BASE_T{
+class sample: public BASE_T{ // sample O( log^2(n) ) out of n 
    using base_t=BASE_T;
  #undef BASE_T
    int n=0;
-   int lg=0;
+  int lg=0; // log2(count)
    int nl=1;
  public:
    int count=0;
 
    using base_t::base_t;
    void push_back( const T& v){
-     if( ++count >= n ){
-       base_t::push_back(v);
+     if( ++count >= n ){ // ∫ lg(x)/x dx ∝ lg^2(x)
+       base_t::push_back(v); // v.size() = O(lg^2(count))
        if( lg ){ n += count/lg; }
      }
      if( count > nl ){
@@ -399,7 +399,8 @@ public:
     }
     splits(const interval &b, const std::set<boundary_t> &d)
       : base_t(b, d){
-     /**/NOTRACE(std::cerr << __PRETTY_FUNCTION__ << '\n';)
+     /**/TRACE(std::cerr << __PRETTY_FUNCTION__ << '\n';)
+	/**/TRACE(std::cerr << b << ", " << d << '\n';)
     }
 
     class iterator : public std::set<boundary_t>::const_iterator {
@@ -449,9 +450,9 @@ public:
         : base(b)
         , base_t(i)
         , first(f){
-       NOTRACE(std::cerr << __PRETTY_FUNCTION__ << '\n';)
-       /**/NOTRACE(std::cerr << "this=" << this << '\n';)
-       /**/NOTRACE(std::cerr << "b=" << b << '\n';)
+       TRACE(std::cerr << __PRETTY_FUNCTION__ << '\n';)
+       TRACE(std::cerr << "this=" << this << '\n';)
+       TRACE(std::cerr << "b=" << b << '\n';)
       }
       auto operator=(nullptr_t n){
 	first=false;
@@ -474,7 +475,7 @@ public:
     }; // end class splits::iterator;
     using lex_t=parts::lex_t;
     splits( const lex_t &l ){
-       NOTRACE( std::cerr << __PRETTY_FUNCTION__ << "(" << l << ")" << '\n'; )
+       TRACE( std::cerr << __PRETTY_FUNCTION__ << "(" << l << ")" << '\n'; )
 	 if( l._this.data()[0]=='f' ){
 	   auto debughook=1;
          }
@@ -1679,16 +1680,16 @@ template<typename R>
 	   }
 #  endif
          void satisfy(){
-         NOTRACE( std::cerr << __PRETTY_FUNCTION__ << '\n'; )
+         TRACE( std::cerr << __PRETTY_FUNCTION__ << '\n'; )
 	  NOTRACE( std::cerr <<  "r()" << r() << '\n'; )
 	 NOTRACE( std::cerr << "r()->req():" << r()->req() << '\n'; )
-	   NOTRACE( std::cerr << "path():" << path() << '\n'; )
+	   TRACE( std::cerr << "path():" << path() << '\n'; )
 	   while( it()!=it().end() && (path() + *it()).satisfies(r()->req()) == kleen::F ){
-	     NOTRACE( std::cerr << "skip " << *it() << '\n'; )
+	     TRACE( std::cerr << "skip " << *it() << '\n'; )
 	     ++it();
            }
-	   NOTRACE( if( it()!=it().end() ){ std::cerr << "satisfied:" << *it() << "\n"; } )
-	   NOTRACE( if( it()==it().end() ){ std::cerr << "satisfy:end()" << "\n"; } )
+	   TRACE( if( it()!=it().end() ){ std::cerr << "satisfied:" << *it() << "\n"; } )
+	   TRACE( if( it()==it().end() ){ std::cerr << "satisfy:end()" << "\n"; } )
 	 }
          auto operator++(){
          /**/NOTRACE(std::cerr << __PRETTY_FUNCTION__ << '\n';)
@@ -2143,20 +2144,27 @@ template<typename R>
 	     NOTRACE( std::cerr << __LINE__ << " end()" << '\n'; )
 	     it()=(++stack()).value_or(nullptr);
 	  }
-	  NOTRACE(
+	  TRACE(
              if( it()!=it().end() ){
-	       std::cerr << "(" << path() << " + " << *it() << " = " << (path() , *it()) << ").satisfies(" << stack().req() << ")" << '\n';
+	       std::cerr << "(" << path() << " + " << *it() << " = " << (path() + *it()) << ").satisfies(" << stack().req() << ")" << '\n';
              }
            )
 	  if(it() != it().end() && (path() , *it()).satisfies(stack().req0()) != kleen::T){
 	    fail.push_back(*it());
-	    NOTRACE( std::cerr << "fail(" << *it() << ")\n"; )
+	    TRACE( std::cerr << "fail(" << *it() << ")\n"; )
             ++*this;
-          }
+          }{
+	    if( it() != it().end() ){
+	      TRACE( std::cerr << "else pass(" << *it() << ")\n"; );
+	      pass.push_back(*it());
+	    }{
+	      TRACE( std::cerr << "else end(" << ")\n"; );
+	    }
+	  }
 	}else{
-	  NOTRACE( std::cerr << stack().l->log() << "\n"; )
+	  TRACE( std::cerr << "elsif( lval )" << "\n"; )
         }
-       /**/TRACE(std::cerr << "it().r():" << (void *)it().r() << '\n';)
+       /**/TRACE( std::cerr << "it().r():" << (void *)it().r() << '\n';)
     }
     iterator operator++(){
         TRACE( std::cerr << __PRETTY_FUNCTION__ << '\n'; )
@@ -2167,7 +2175,7 @@ template<typename R>
 	  NOTRACE( std::cerr << "++it():" << it() << "\n"; ) // ++it():{0x606000003638,end()}
           NOTRACE( std::cerr << "it() == it().end():" << (it() == it().end()) << '\n'; )
 	while( it()==it().end() ){
-	  NOTRACE( std::cerr << "stack().size() : " << stack().size() << '\n'; )
+	  TRACE( std::cerr << "stack().size() : " << stack().size() << '\n'; )
           split(*this); //
 	  pass.clear(); fail.clear();
 	  NOTRACE( std::cerr << "stack().size() : " << stack().size() << '\n'; )
@@ -2187,10 +2195,10 @@ template<typename R>
 	NOTRACE( std::cout << it() << '\n'; )
 	if( (path() , *it()).satisfies(stack().req0()) != kleen::T){
           fail.push_back(*it());
-	  NOTRACE( std::cerr<<"fail(" << *it() << ")\n"; )
+	  TRACE( std::cerr<<"fail(" << *it() << ")\n"; )
 	    //   return ++*this;  // // //
         } else {
-	  NOTRACE( std::cerr<<"pass(" << *it() << ")\n"; )
+	  TRACE( std::cerr<<"pass(" << *it() << ")\n"; )
           pass.push_back(*it());
           return *this;
         }
@@ -2339,7 +2347,7 @@ template<typename R>
 
 #if 1
   static std::optional<boundary_t> partcount0(int i, const sample<row> &p, const sample<row> &f, const std::set<boundary_t> &B){
-    NOTRACE( std::cerr << __PRETTY_FUNCTION__ << "(\n" << i << ","  << p << ",\n" << f << "," << B << ")" << '\n'; )
+    TRACE( std::cerr << __PRETTY_FUNCTION__ << "(\n" << i << ","  << p << ",\n" << f << "," << B << ")" << '\n'; )
 
     if( p.empty()||f.empty() ){ return {}; }
     std::optional<boundary_t> ret;
@@ -2352,30 +2360,30 @@ template<typename R>
       p1      = std::count_if(p.begin(), p.end(), lt);
       f1      = std::count_if(f.begin(), f.end(), lt);
       if( p1==0 && f1>0 ){  // some fail | all pass
-        NOTRACE(std::cerr << p1 << "," << f1 << "," << b << '\n'; )
+        TRACE(std::cerr << p1 << "," << f1 << "," << b << '\n'; )
 	b0=b; // possible higher bound
         p0=p1;
         f0=f1;
       }
       if( p0 == 0 && p1 > 0 ){
 	ret = b0; // highest possible low bound
-        NOTRACE(std::cerr << p0 << "," << p1 << "," << f1 << "," << b << '\n';)
+        TRACE(std::cerr << p0 << "," << p1 << "," << f1 << "," << b << '\n';)
         p0=p1;
       }
       if( p1 == p.size() && f1 < f.size() ){ // all pass | some fail
-        NOTRACE(std::cerr << p1 << "," << f1 << "," << b << '\n';)
+        TRACE(std::cerr << p1 << "," << f1 << "," << b << '\n';)
         if( p0<=0 || f0 < f.size() - f1 ){ // if no low bound or high bound isolates more failures
           ret = b;  // lowest possible high bound
         }
         break;
       }
     }
-    NOTRACE( if( ret ){ std::cerr << *ret << '\n'; } )
+    TRACE( if( ret ){ std::cerr << *ret << '\n'; } )
     return ret;
   }
 
   static std::tuple<int,boundary_t> partcount(int i, const sample<row> &p, const sample<row> &f, const std::set<boundary_t> &B){
-    NOTRACE( std::cerr << __PRETTY_FUNCTION__ << "(\n" << i << ","  << p << ",\n" << f << "," << B << ")" << '\n'; )
+    TRACE( std::cerr << __PRETTY_FUNCTION__ << "(\n" << i << ","  << p << ",\n" << f << "," << B << ")" << '\n'; )
     std::tuple<int,boundary_t> ret={-1,{}};
     using val_t=std::remove_cv_t<std::remove_reference_t<decltype(p[0][i])>>;
     if( p.empty()||f.empty() ){ return ret; }
@@ -2394,12 +2402,12 @@ template<typename R>
     std::vector<decltype(fi.begin())>fp;
     pp.reserve(B.size());
     fp.reserve(B.size());
-    NOTRACE( std::cerr << pi.size() << ":" << fi.size() << "\n"; )
+    TRACE( std::cerr << pi.size() << ":" << fi.size() << "\n"; )
     for( auto b:B ){
       auto bp=[b](val_t x){ return x<b; };
       pp.push_back(std::partition(pp.empty()?pi.begin():pp.back(),pi.end(),bp));
       fp.push_back(std::partition(fp.empty()?fi.begin():fp.back(),fi.end(),bp));
-      NOTRACE( std::cerr << b <<":"<< pp.back()-pi.begin() << ":" << fp.back()-fi.begin() << "\n"; )
+      TRACE( std::cerr << b <<":"<< pp.back()-pi.begin() << ":" << fp.back()-fi.begin() << "\n"; )
 	if( pp.back()==pi.begin() && fp.back()!=fi.begin() ){
 	  ret={fp.back()-fi.begin(),b};
 	}else if( pp.back()==pi.end() && fp.back()!=fi.end() ){
@@ -2409,7 +2417,7 @@ template<typename R>
 	  break;
 	}
     }
-    NOTRACE( std::cerr << __FUNCTION__ << "=" << ret << '\n'; )
+    TRACE( std::cerr << __FUNCTION__ << "=" << ret << '\n'; )
     return ret;
   }
 #endif
@@ -2418,29 +2426,29 @@ template<typename R>
   //     }
 
   static std::optional<boundary_t> choosesplit(int i, const lattice::iterator &ki, const std::set<boundary_t> &B){
-    NOTRACE( std::cerr << __PRETTY_FUNCTION__ << "(" << i << "," << ki.stack().predicate.expr()->stringify() << "," << B << ")" << "\n"; );
+    TRACE( std::cerr << __PRETTY_FUNCTION__ << "(" << i << "," << ki.stack().predicate.expr()->stringify() << "," << B << ")" << "\n"; );
     std::optional<boundary_t> ret;
     path p=ki.path();
     for(auto b : B){
-     NOTRACE( std::cerr << b << "\n"; );
+     TRACE( std::cerr << b << "\n"; );
       auto s0= p + segment(i, interval({}, b)) ;
       auto s1= p + segment(i, interval(b,{})) ;
       auto l0=ki.stack().predicate.expr().admits(s0);
       auto l1=ki.stack().predicate.expr().admits(s1);
-      NOTRACE( std::cerr << s0 <<":"<< l0 << ", " << s1 << ":"<< l1 << "\n"; );
+      TRACE( std::cerr << s0 <<":"<< l0 << ", " << s1 << ":"<< l1 << "\n"; );
     }
     return ret;
   }
 
   static void split(const lattice::iterator &ki){
-   NOTRACE(std::cerr << __PRETTY_FUNCTION__ << '\n';);
+   TRACE(std::cerr << __PRETTY_FUNCTION__ << '\n';);
 
     constexpr int threshhold = 2;
     if(ki.fail.size() <= threshhold){
       return;
     }
-   NOTRACE(std::cerr << "ki.path():" << ki.path()<< '\n';);
-   NOTRACE(std::cerr << "confluence[ki.path()]:" << confluence[ki.path()] << '\n';);
+   TRACE(std::cerr << "ki.path():" << ki.path()<< '\n';);
+   TRACE(std::cerr << "confluence[ki.path()]:" << confluence[ki.path()] << '\n';);
 
     auto hints=ki.req().expr()->hints();
     int i = 0;
@@ -2451,7 +2459,7 @@ template<typename R>
     for( auto x:ki.req().prefix() )
 #endif
     {
-      NOTRACE(std::cerr << "p:" << i << ":" << x << '\n';);
+      TRACE(std::cerr << "p:" << i << ":" << x << '\n';);
       hints[i].insert({x,infi});
       hints[i].insert({x,supre});
       ++i;
@@ -2464,9 +2472,9 @@ template<typename R>
          ki.req().expr()->hints() 
 #endif
     ){
-      NOTRACE(std::cerr << "hint:" << i << ":" << x << '\n';);
+      TRACE(std::cerr << "hint:" << i << ":" << x << '\n';);
       if( i<ki.path().size() && ki.path()[i].is_point() ){ continue; }
-      choosesplit( i%ki.path(),ki,x);
+      NOTRACE( choosesplit( i%ki.path(),ki,x); )
       NOTRACE( partcount0(i%ki.path(), ki.pass, ki.fail, x) );
      if( auto b = partcount(i%ki.path(), ki.pass, ki.fail, x); std::get<0>(b)>0 ){
         split(ki, i, std::get<1>(b));
@@ -2861,7 +2869,7 @@ namespace qtl{
            ++it();
          }
 	 if( it() != end() ){
-	   NOTRACE( std::cerr << *it() << " satisfies\n"; )
+	   TRACE( std::cerr << *it() << " satisfies\n"; )
 	 }else{
       	   NOTRACE( std::cerr << "satisfy:end()\n"; )
 	 }
