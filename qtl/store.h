@@ -1234,7 +1234,11 @@ template<typename R>
     static inline std::ostream &write(std::ostream &os, const vertex &t, int indent = 0){
       switch(t.index()){
       case 0: {
-        os << std::get<0>(*(base_t *)&t);
+	if( std::get<0>(*(base_t *)&t).size()<10 ){
+          os << std::get<0>(*(base_t *)&t);
+	}else{
+          os << "{" << std::get<0>(*(base_t *)&t).front() << " ... /* " << std::get<0>(*(base_t *)&t).size() << " */ ... " <<  std::get<0>(*(base_t *)&t).back() << "}"; ;
+        }
       };break;
       case 1: {
         os << std::get<1>(*(base_t *)&t);
@@ -1970,25 +1974,25 @@ template<typename R>
 	  path()={};
           return false;
         }
-	TRACE(std::cerr << *this << '\n'; )
+	NOTRACE(std::cerr << *this << '\n'; )
 	NOTRACE( std::cerr << "it:{" << it()  << " <- "; ) 
         base_t::pop_back();
         if( empty() ){
 	  path({});
-	  TRACE( std::cerr << "empty()}\n"; ) 
+	  NOTRACE( std::cerr << "empty()}\n"; ) 
           return false;
         }
-	TRACE( std::cerr << it() << "}\n"; );
+	NOTRACE( std::cerr << it() << "}\n"; );
 	  NOTRACE( std::cerr << "it().it().r():" << it().it().r()  << "\n"; )	  
 	  NOTRACE( std::cerr << "it().it().r()->vertex():" << it().it().r()->vertex()  << "\n"; )	  
 	  NOTRACE( std::cerr << "*it().it().r()->vertex():" << *it().it().r()->vertex()  << "\n"; ) 
 
-	  TRACE( std::cerr << "l:{" << l  << " <- "; ) 
+	  NOTRACE( std::cerr << "l:{" << l  << " <- "; ) 
         l         = it().r()->v();
 	  TRACE( std::cerr << l  << "}" << '\n'; ) 
 
 	  NOTRACE( std::cerr << "*it().it().r()->vertex():" << *it().it().r()->vertex()  << "\n"; ) 
-	  TRACE( std::cerr << "path():" << path() << "\n"; )
+	  NOTRACE( std::cerr << "path():" << path() << "\n"; )
        return true;
       }
       std::optional<leaf::iterator> operator++(){
@@ -2041,7 +2045,7 @@ template<typename R>
       inline auto& write(std::ostream &os=std::cout )const{
 
 	os << "path=" << path() << '\n';
-        os << "ptr<vertex>-" << l << '\n';;
+        TRACE( os << "ptr<vertex>:" << l << '\n'; )
 	if( l ){ os << "*vertex=" << *l << '\n'; }
 	if( is_leaf() ){
 	  os << "leaf::iterator=" << leaf_it() << '\n';
@@ -2109,7 +2113,7 @@ template<typename R>
       //    iterator(nullptr_t p){}
 
     iterator(const path::requirements &r, bool lval=false) :  base_t({}, {}){
-	/**/TRACE(std::cerr << __PRETTY_FUNCTION__ << "(" << r << ")" << '\n';)
+	/**/NOTRACE(std::cerr << __PRETTY_FUNCTION__ << "(" << r << ")" << '\n';)
        /**/NOTRACE(std::cerr << (void *)root[{}].get() << '\n';)
         //auto p=root[{}];
 	  //TRACE(std::cerr << "p.get()=" << (void *)p.get() << '\n';)
@@ -2127,11 +2131,11 @@ template<typename R>
         assert(stack().l);
 
         while(!stack().is_leaf()){
-          TRACE( std::cerr << __LINE__ << " r:" <<r );
-	  TRACE( std::cerr << "*root[" << path() << "]:" << *root[path()] << "\n"; ) // 7291. 7359
-	  TRACE( std::cerr << "stack().path()" << stack().path() << "\n"; )
-	  TRACE( std::cerr << "*stack().l" << *stack().l << "\n"; )
-          TRACE( std::cerr << kve::iterator(path(), r) << '\n'; )
+          NOTRACE( std::cerr << __LINE__ << " r:" <<r );
+	  NOTRACE( std::cerr << "*root[" << path() << "]:" << *root[path()] << "\n"; ) // 7291. 7359
+	  NOTRACE( std::cerr << "stack().path()" << stack().path() << "\n"; )
+	  NOTRACE( std::cerr << "*stack().l" << *stack().l << "\n"; )
+          NOTRACE( std::cerr << kve::iterator(path(), r) << '\n'; )
 	    stack().push_back(kve::iterator(stack().path(), r)); // 7393
         }
 
@@ -2144,30 +2148,30 @@ template<typename R>
 	     NOTRACE( std::cerr << __LINE__ << " end()" << '\n'; )
 	     it()=(++stack()).value_or(nullptr);
 	  }
-	  TRACE(
+	  NOTRACE(
              if( it()!=it().end() ){
 	       std::cerr << "(" << path() << " + " << *it() << " = " << (path() + *it()) << ").satisfies(" << stack().req() << ")" << '\n';
              }
            )
 	  if(it() != it().end() && (path() , *it()).satisfies(stack().req0()) != kleen::T){
 	    fail.push_back(*it());
-	    TRACE( std::cerr << "fail(" << *it() << ")\n"; )
+	    NOTRACE( std::cerr << "fail(" << *it() << ")\n"; )
             ++*this;
           }{
 	    if( it() != it().end() ){
-	      TRACE( std::cerr << "else pass(" << *it() << ")\n"; );
+	      NOTRACE( std::cerr << "else pass(" << *it() << ")\n"; );
 	      pass.push_back(*it());
 	    }{
-	      TRACE( std::cerr << "else end(" << ")\n"; );
+	      NOTRACE( std::cerr << "else end(" << ")\n"; );
 	    }
 	  }
 	}else{
-	  TRACE( std::cerr << "elsif( lval )" << "\n"; )
+	  NOTRACE( std::cerr << "elsif( lval )" << "\n"; )
         }
-       /**/TRACE( std::cerr << "it().r():" << (void *)it().r() << '\n';)
+       /**/NOTRACE( std::cerr << "it().r():" << (void *)it().r() << '\n';)
     }
     iterator operator++(){
-        TRACE( std::cerr << __PRETTY_FUNCTION__ << '\n'; )
+        NOTRACE( std::cerr << __PRETTY_FUNCTION__ << '\n'; )
         while(1){
 	  NOTRACE( std::cerr << "it():" << it() << "\n"; )
 	  assert( it()!=it().end() );
@@ -2175,7 +2179,7 @@ template<typename R>
 	  NOTRACE( std::cerr << "++it():" << it() << "\n"; ) // ++it():{0x606000003638,end()}
           NOTRACE( std::cerr << "it() == it().end():" << (it() == it().end()) << '\n'; )
 	while( it()==it().end() ){
-	  TRACE( std::cerr << "stack().size() : " << stack().size() << '\n'; )
+	  NOTRACE( std::cerr << "stack().size() : " << stack().size() << '\n'; )
           split(*this); //
 	  pass.clear(); fail.clear();
 	  NOTRACE( std::cerr << "stack().size() : " << stack().size() << '\n'; )
@@ -2195,10 +2199,10 @@ template<typename R>
 	NOTRACE( std::cout << it() << '\n'; )
 	if( (path() , *it()).satisfies(stack().req0()) != kleen::T){
           fail.push_back(*it());
-	  TRACE( std::cerr<<"fail(" << *it() << ")\n"; )
+	  NOTRACE( std::cerr<<"fail(" << *it() << ")\n"; )
 	    //   return ++*this;  // // //
         } else {
-	  TRACE( std::cerr<<"pass(" << *it() << ")\n"; )
+	  NOTRACE( std::cerr<<"pass(" << *it() << ")\n"; )
           pass.push_back(*it());
           return *this;
         }
@@ -2226,16 +2230,17 @@ template<typename R>
     //#endif
 
     operator lex_t()const{
-      NOTRACE( std::cout << __PRETTY_FUNCTION__ << '\n'; )
+      TRACE( std::cout << __PRETTY_FUNCTION__ << '\n'; )
       lex_t ret;
       std::vector<lex::tuple<path::lex_t,vertex::lex_t>>r;
       //      for( auto x:*this ){
       for( auto x:*m ){
 	path::lex_t p=x.first;
 	vertex::lex_t v=*x.second;;
-        NOTRACE( std::cout << "{p,v}:" << "{" << p << "," << v << "}"  << '\n'; )
+	TRACE( std::cout << "[" << p << "]" NOTRACE( << " = " << v ) << "\n"; );
 	lex::tuple<path::lex_t,vertex::lex_t>l{p,v};
         NOTRACE( std::cout << "l:" << l << '\n'; )
+	TRACE( std::cout << l.size() << "\n"; )
 	r.push_back(l);
       }
       ret=r;
@@ -2275,7 +2280,7 @@ template<typename R>
       return os;
     }
      void save(const std::string &f="store.dat"){
-     NOTRACE( std::cout << __PRETTY_FUNCTION__ << "(" << f << ")" << '\n'; )
+     TRACE( std::cout << __PRETTY_FUNCTION__ << "(" << f << ")" << '\n'; )
      std::ofstream o(f, std::ios::binary);
      NOTRACE( std::cout << "*this="<< *this << '\n'; )
      NOTRACE( std::cout << "*m=" << *m << '\n'; )
@@ -2407,7 +2412,7 @@ template<typename R>
       auto bp=[b](val_t x){ return x<b; };
       pp.push_back(std::partition(pp.empty()?pi.begin():pp.back(),pi.end(),bp));
       fp.push_back(std::partition(fp.empty()?fi.begin():fp.back(),fi.end(),bp));
-      TRACE( std::cerr << b <<":"<< pp.back()-pi.begin() << ":" << fp.back()-fi.begin() << "\n"; )
+      NOTRACE( std::cerr << b <<":"<< pp.back()-pi.begin() << ":" << fp.back()-fi.begin() << "\n"; )
 	if( pp.back()==pi.begin() && fp.back()!=fi.begin() ){
 	  ret={fp.back()-fi.begin(),b};
 	}else if( pp.back()==pi.end() && fp.back()!=fi.end() ){
@@ -2459,7 +2464,7 @@ template<typename R>
     for( auto x:ki.req().prefix() )
 #endif
     {
-      TRACE(std::cerr << "p:" << i << ":" << x << '\n';);
+      NOTRACE(std::cerr << "p:" << i << ":" << x << '\n';);
       hints[i].insert({x,infi});
       hints[i].insert({x,supre});
       ++i;
@@ -2472,7 +2477,7 @@ template<typename R>
          ki.req().expr()->hints() 
 #endif
     ){
-      TRACE(std::cerr << "hint:" << i << ":" << x << '\n';);
+      NOTRACE(std::cerr << "hint:" << i << ":" << x << '\n';);
       if( i<ki.path().size() && ki.path()[i].is_point() ){ continue; }
       NOTRACE( choosesplit( i%ki.path(),ki,x); )
       NOTRACE( partcount0(i%ki.path(), ki.pass, ki.fail, x) );
@@ -2485,14 +2490,14 @@ template<typename R>
   
   static void split(const lattice::iterator &ki, int i, const boundary_t &b){
     TRACE( std::cerr << __PRETTY_FUNCTION__ << '(' << ki << "," << i << ',' << b << ")\n"; )
-    TRACE( std::cerr << "root:" << root << '\n'; )
+    NOTRACE( std::cerr << "root:" << root << '\n'; )
     TRACE( std::cerr << "ki.path():" << ki.path() << '\n'; )
     TRACE( std::cerr << "ki.stack():" << ki.stack() << '\n'; )
       boundary_t lb={};
       boundary_t ub={};
       path p=ki.path();
-    NOTRACE( std::cerr << "p:" << p << '\n'; )
-    NOTRACE( std::cerr << "p.size():" << p.size() << "\n"; )
+    TRACE( std::cerr << "p:" << p << '\n'; )
+    TRACE( std::cerr << "p.size():" << p.size() << "\n"; )
     NOTRACE( std::cerr << "confluence[p]:" << confluence[p] << "\n"; )
 
       if( ki.stack().size() ){
@@ -2516,8 +2521,8 @@ template<typename R>
 
       auto s0= p + segment(i, interval({}, b)) ;
       auto s1= p + segment(i, interval(b,{})) ;
-      NOTRACE( std::cerr << s0 << " = " << p <<"+"<< segment(i, interval({}, b)) << '\n'; )
-      NOTRACE( std::cerr << s1 << " = " << p <<"+"<< segment(i, interval(b, {})) << '\n'; )
+      TRACE( std::cerr << s0 << " = " << p <<"+"<< segment(i, interval({}, b)) << '\n'; )
+      TRACE( std::cerr << s1 << " = " << p <<"+"<< segment(i, interval(b, {})) << '\n'; )
 
       root[s0] = std::make_shared<vertex>(r0);
       root[s1] = std::make_shared<vertex>(r1);
@@ -2559,23 +2564,28 @@ template<typename R>
          NOTRACE( std::cerr << v[i] << '\n'; );
          NOTRACE( std::cerr << v[i].div() << '\n'; );
          v[i].div().insert(b);
-         NOTRACE( std::cerr << "s0" << p + segment(i, interval({}, b)) << '\n'; )
-         NOTRACE( std::cerr << "s1"  << p + segment(i, interval(b, {})) << '\n'; )
+         TRACE( std::cerr << "root[" << p + segment(i, interval({}, b)) << "]= make_shared<vertex>(r0)\n"; )
+         TRACE( std::cerr << "root["  << p + segment(i, interval(b, {})) << "]= make_shared<vertex>(r1)\n"; )
 
           root[p + segment(i, interval({}, b))] = std::make_shared<vertex>(r0);
           root[p + segment(i, interval(b, {}))] = std::make_shared<vertex>(r1);
 
+	  TRACE( std::cerr << "root[pp] = " <<  root[pp] << "\n"; )
+	  TRACE( std::cerr << "root["  << pp << "= make_shared<vertex>(v)\n"; )
+
          root[pp]=std::make_shared<vertex>(v);
 
          NOTRACE( std::cerr << std::get<1>(*root[pp])[i] << '\n'; );
-          NOTRACE( std::cerr << *root[pp] << '\n'; );
+	 TRACE( std::cerr << "root[" << p << "]=" << root[p] << '\n'; );
           NOTRACE(std::cerr << "root=" << root << '\n';)
+	 TRACE( std::cerr << "root.erase(" << p << ")\n"; );
+	  root.erase(p);
 	 return;
        }
-    }
+     }
 
-    NOTRACE( std::cerr << "s0" << p + segment(i, interval({}, b)) << '\n'; )
-    NOTRACE( std::cerr << "s1"  << p + segment(i, interval(b, {})) << '\n'; )
+     NOTRACE( std::cerr << "s0" << p + segment(i, interval({}, b)) << '\n'; )
+     NOTRACE( std::cerr << "s1"  << p + segment(i, interval(b, {})) << '\n'; )
 
 #if 1
       NOTRACE( std::cerr << interval(lex::string(std::string(""))) << '\n'; )
@@ -2590,11 +2600,16 @@ template<typename R>
 #endif
       }
 #endif      
+
+    NOTRACE( std::cerr << "root[" << p + segment(i, interval({}, b)) << "= make_shared<vertex>(r0)\n"; )
+    NOTRACE( std::cerr << "root["  << p + segment(i, interval(b, {})) << "= make_shared<vertex>(r1)\n"; )
+
     root[p + segment(i, interval({}, b))] = std::make_shared<vertex>(r0);
     root[p + segment(i, interval(b, {}))] = std::make_shared<vertex>(r1);
 
     auto v = std::vector<splits>(i + 1);
     v[i]   = { {}, { b } };
+    TRACE( std::cerr << "root[" << p << "] = std::make_shared<vertex>(v) \n" );
     root[p] = std::make_shared<vertex>(v);
     NOTRACE(std::cerr << "["<< p << "]" << '\n';)
     NOTRACE(std::cerr << "root="<< root << '\n';)
