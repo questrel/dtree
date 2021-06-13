@@ -54,11 +54,11 @@ namespace detail{
 #define TRACE(x) x
 #endif
 #ifdef FUZZING
-#define TRACE(x)
+//#define TRACE(x)
 #endif
 #define NOTRACE(x) 
 #ifndef TRACE
-#define TRACE(x)
+//#define TRACE(x)
 #endif
 #ifndef WARN
 #define WARN(x) x
@@ -529,7 +529,7 @@ std::ostream& operator<<(std::ostream& os,const qtl::setverbose &v){
      return os;
  }
   std::ostream& operator<<(std::ostream& os,qtl::ios_base::fmtflags &f){
-      auto p=os.pword(qtl::ios_base::xfmt); 
+     static auto p=os.pword(qtl::ios_base::xfmt); 
      if( !p ){
        p = os.pword(qtl::ios_base::xfmt) = new qtl::ios_base::fmtflags(os);
        NOTRACE( std::cout << __PRETTY_FUNCTION__ << (void*) &os << ".pword=" << p << '\n'<<std::flush; )
@@ -570,7 +570,24 @@ qtl::basic_ostream& operator<<(qtl::basic_ostream& os, const std::pair<T0,T1>& o
   os << "{"_r << obj.first <<  /*s.sep0*/ ", "_r << obj.second << "}"_r /* << s.sep1 "\n" */ ;
   return os;
 }
+#else
+template <class T0,class T1>
+std::ostream& operator<<(std::ostream& os, const std::pair<T0,T1>& obj){
+  // os << boost::core::demangle(typeid(obj).name()) ;
+  using namespace qtl;
+  qtl::ios_base::fmtflags f;
+  os >> f;
+  //  if( f.verbosity>qtl::ios_base::fmtflags::generic ){
+  //    os << "std::pair";
+  //  }else{
+  os << boost::core::demangle(typeid(obj).name());
+  //  }
+  os << "{"_r << obj.first <<  /*s.sep0*/ ", "_r << obj.second << "}"_r /* << s.sep1 "\n" */ ;
+  return os;
+}
 #endif // os << std::pair
+
+
 
 #if 0
 //http://jguegant.github.io/blogs/tech/sfinae-introduction.html#sfinae-introduction
@@ -960,6 +977,23 @@ namespace qtl{
       return *this;
     }
 
+#if 1
+    /*
+./qtl/store.h:705:17: error: use of overloaded operator '<<' is ambiguous (with operand types 'qtl::ostringstream' and 'qtl::basic_interval<lex::scalar, void>')
+                    qs << i;
+                    ~~ ^  ~
+./qtl/store.h:3102:36: note: in instantiation of function template specialization 'qtl::operator<<<qtl::store::path::pathspec, void, qtl::intvec<>::iterator>' requested here
+        TRACE(std::cerr << "path(),i) = " << (path(),i) << "\n"; );
+                                          ^
+./qtl/out.h:985:20: note: candidate function [with T = qtl::basic_interval<lex::scalar, void>, $1 = 0]
+    basic_ostream& operator<<(const T &t){ 
+                   ^
+./qtl/string.h:866:21: note: candidate function
+qtl::ostringstream& operator<<(qtl::ostringstream& os, const string &s){
+                    ^
+./qtl/interval.h:658:26: note: candidate function
+    friend std::ostream& operator<<(std::ostream& os, const basic_interval &s){
+     */
     template <typename T
     //     ,typename D= std::experimental::is_detected<std_ostream_left_shift_t,T>
     //,typename E= std::enable_if_t<std::experimental::is_detected_v<std_ostream_left_shift_t,T>>
@@ -984,7 +1018,7 @@ namespace qtl{
       os << t;
      return *this;
    }
-
+#endif
    template <typename T>
    basic_ostream& operator<<(const qtl::type<T> &t){
      NOTRACE( std::cout << __PRETTY_FUNCTION__ << '\n'; )

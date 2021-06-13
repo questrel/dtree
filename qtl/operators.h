@@ -31,7 +31,7 @@ X(interval,2,<= x::x <,interval,interval)		 \
 X(logical_not,1,!,preop,equal_to)		 \
  /*X(bit_and,02,&,left,equal_to)*/		 \
  /*X(bit_or,02,|,left,bit_and)*/		 \
-X(logical_and,2,&&,left_,logical_and)	 \
+ X(logical_and,2,&&,left_,logical_and)	 \
 X(logical_or,2,||,left_,logical_or) \
 // end define OP_TABLE
 #else

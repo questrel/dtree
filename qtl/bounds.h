@@ -22,6 +22,7 @@ qtl::boundary<S> operator++(const S &s,int){
     return  qtl::boundary<S>(s,qtl::supre);
 }
 //#endif
+
 namespace x{
 #if 0
   class hemi{
@@ -37,7 +38,7 @@ namespace x{
   constexpr bool lt=false;
   constexpr bool gt=true;
   template<bool is_gt,typename S=lex::string,
-    typename = std::enable_if_t<std::is_base_of_v<lex::string,S>||std::is_same_v<lex::number,S>>
+    typename = std::enable_if_t<std::is_base_of_v<lex::string,S>||std::is_same_v<lex::number,S>||std::is_same_v<lex::scalar,S>>
   >
   class hemi:public qtl::boundary<S>{
     typedef qtl::boundary<S> base_t;
@@ -119,6 +120,14 @@ namespace x{
     decltype(x[std::declval<S>()]) operator==(const S &s, const _&x){
     return x[s];
   }
+  template<class S>
+    decltype(x[std::declval<S>()]) operator!=(const _&x, const S &s){
+    return !x[s];
+  }
+  template<class S>
+    decltype(x[std::declval<S>()]) operator!=(const S &s, const _&x){
+    return !x[s];
+  }
   template<typename S>
   qtl::boundary<S> operator|(const _ &x,const S &s){ // x::x | s
     return qtl::boundary<S>(s,qtl::infi);
@@ -133,6 +142,10 @@ namespace x{
   }
   template<typename S>  
     hemi<gt,qtl::boundary_type_t<S>> operator<(const S &s, const _ &x){ // s < x::x
+    return hemi<gt,qtl::boundary_type_t<S>>(qtl::boundary<qtl::boundary_type_t<S>>(s,qtl::supre));
+  }
+  template<typename S>  
+  hemi<gt,qtl::boundary_type_t<S>> operator>(const _ &x,const S &s){ // x::x > s
     return hemi<gt,qtl::boundary_type_t<S>>(qtl::boundary<qtl::boundary_type_t<S>>(s,qtl::supre));
   }
 #if 1
@@ -153,7 +166,15 @@ namespace x{
    hemi<gt,B> operator<=(const S &s, const _ &x){ // s <= x::x
     return hemi<gt,B>(qtl::boundary<B>(s,qtl::infi));
   }  
+  template<typename S, typename B=qtl::boundary_type_t<S>>
+  hemi<gt,B> operator>=(const _&x, const S &s){ // x::x >= s
+    return hemi<gt,B>(qtl::boundary<B>(s,qtl::infi));
+  }
+
 }; // end namespace x
+
+//static inline qtl::boundary<lex::scalar> ε=0_s++; // epsilon
+
 template<typename S>
 qtl::basic_interval<S> operator,(const qtl::boundary<S> &l,const qtl::boundary<S> &r){
 	  return qtl::basic_interval<S>(l,r);
@@ -203,11 +224,21 @@ if( argc==1 || argv[1][0] == '<' ){
 #endif
 #include "string.h"
  using  namespace lex::literals;
+
  std::cout << qtl::setverbose(qtl::ios_base::fmtflags::none);
+ using qtl::ε;
+   std::cout << -ε << '\n';
+   std::cout << ε << '\n';
+   std::cout << 0-ε << '\n';
+   std::cout << 0+ε << '\n';
    std::cout << --1.0_s << '\n';
+   std::cout << 1.0_s-ε << '\n';
    std::cout << 1.0_s++ << '\n';
+   std::cout << 1.0_s+ε << '\n';
    std::cout << --"1.0"_s << '\n';
+   std::cout << "1.0"_s-ε << '\n';
    std::cout << "1.0"_s++ << '\n';
+   std::cout << "1.0"_s+ε << '\n';
    }else{
  std::cout << 1.0 << '\n';
  std::cout << 2.0 << '\n';

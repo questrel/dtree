@@ -13,6 +13,10 @@
 namespace qtl{
   enum class op{
 #define X(n,a,o,f,p) n,
+    //#define debug_logical_and 
+#ifdef  debug_logical_and
+    X(logical_and,2,&&,left_,logical_and)
+#endif
     OP_TABLE
 #undef X
 }; // end class op
@@ -46,7 +50,7 @@ class lazyvec{
    lazyvec(const V<P>&v):v(v){}
    lazyvec(const V<P>&v,std::function<A(const P&)>f):v(v),f(f){}
    //it operator[](int i)const{ return it(*this,&v[i]); }
-   A operator[](int i)const{ return p(v[i]); }
+  A operator[](int i)const{ return p(v[i]); }
    const_iterator begin()const{ return const_iterator(*this,v.begin()); }
    const_iterator end()const{ return const_iterator(*this,v.end()); }
    size_t size()const{ return v.size(); }
@@ -164,6 +168,7 @@ class vec{
 #endif
     //using C::C;
     tree(){};
+#if 1
     tree(const C &c,const std::vector<tree> &b={}):C(c),branches(b){
 	NOTRACE( std::cerr << __PRETTY_FUNCTION__ << "(" << c << ", ";
 	       std::cerr << "{" ;
@@ -173,7 +178,12 @@ class vec{
 	       std::cerr << "}" ;
 	       std::cerr << ")" << '\n'; )
       }
-
+#endif
+#if 0
+    tree(const C &c):C(c),branches({}){
+      TRACE( std::cerr << __PRETTY_FUNCTION__ << "(" << c << ")\n"; )
+      }
+#endif
 friend std::ostream& operator<<(std::ostream& os, const tree &o){
    qtl::ios_base::fmtflags f;
    os >> f;  
@@ -256,21 +266,22 @@ class operation{
   template<typename... S_>
   operand_t eval(const std::vector<operand_t> &v,const S_&... s_)const{
         if( !cachevalue || !v.empty() ){
-	  if( o == op::greater ){
-           NOTRACE( std::cout << __PRETTY_FUNCTION__ << '\n'; )
-           NOTRACE( std::cout << "optable.at(" << (int)o << ").eval)(" << *this << "," << v << ",s_...)" << 'n'; )
-	  }
+	  // if( o == op::greater ){
+           TRACE( std::cout << __PRETTY_FUNCTION__ << '\n'; )
+           TRACE( std::cout << "optable.at(" << (int)o << ").eval)(" << *this << "," << v << ",s_...)" << '\n'; )
+	     //}
 	  if( auto t=(*optable.at(o).eval)(*this,v,s_...); t.is_null() ){
+	    TRACE( std::cout << "= null" << n << '\n'; )
 	     return t;
           }else{
-	    NOTRACE( std::cout << "=" << t << '\n'; )
+	    TRACE( std::cout << "=" << t << '\n'; )
 	    //cachevalue=t;
 	    NOTRACE( std::cout << __LINE__ << '\n'; )
 	    return t;
           }
         }else{
           NOTRACE( std::cout << __PRETTY_FUNCTION__ << '\n'; )
-	  NOTRACE( std::cerr << "cachevalue=" << *cachevalue << '\n'; )
+	  TRACE( std::cerr << "cachevalue=" << *cachevalue << '\n'; )
           return *cachevalue;
         }
   }
@@ -338,7 +349,7 @@ operand_t  make_interval(const operand_t &a, const operand_t &b){
 #endif
 #if 0
 #define X0(n,o)  T(n,o,					      \
-  NORACE( std::cout << __PRETTY_FUNCTION__  << std::endl; ); \
+  NOTRACE( std::cout << __PRETTY_FUNCTION__  << std::endl; ); \
 		   if( !t.cachevalue ){				      \
 		       NOTRACE( std::cerr << "!t.cachevalue" << '\n'; ) \
 		     if( op::n==op::name ){    \
@@ -361,9 +372,30 @@ operand_t  make_interval(const operand_t &a, const operand_t &b){
                    return *t.cachevalue; \
  )
 #endif
+#ifdef debug_logical_and
+  template<typename V0=std::vector<operand_t>, typename V2=std::vector<operand_t>> 
+ static inline operand_t eval_logical_and(const operation &t,const V0 &v,const symbol_table &syms={},const V2 /*std::vector<operand_t>*/ &cols={}){ 
+    TRACE( std::cerr << __PRETTY_FUNCTION__  << "(" <<  v[0] << "," << v[1] << ")" << std::endl; )
+  using namespace std;
+    TRACE( std::cerr << (operand_t)(v[0]) << "&&" <<  (operand_t)(v[1]) << "\n"; )
+      TRACE( std::cerr << ((operand_t)(v[0]) && (operand_t)(v[1])) << "\n"; )
+      TRACE(
+	 auto r= (operand_t)(v[0]) && (operand_t)(v[1]); 
+	 std::cerr << r << "\n"; 
+	 std::cerr << (operand_t)r << "\n";
+	    )
+ return ((operand_t)(v[0]) && (operand_t)(v[1])); 
+}
+#endif
 #define X1(n,o)  T(n,o, return operation::n((operand_t)(v[0])); )
 #define X01(n,o) T(n,o, return std::n<operand_t>()((operand_t)(v[0])); )
-#define X2(n,o)  T(n,o, using namespace std; return ((operand_t)(v[0]) o (operand_t)(v[1])); )
+#define X2(n,o)  T(n,o, using namespace std; \
+       TRACE( std::cerr << __PRETTY_FUNCTION__  << "\n"; ) \
+       TRACE( auto a= ((operand_t)(v[0]) o (operand_t)(v[1])); ) \
+       TRACE( std::cerr << "=" << a << "\n"; ) \
+       TRACE( std::cerr << "(operand_t)" << (operand_t)a << "\n"; ) \
+       return ((operand_t)(v[0]) o (operand_t)(v[1])); \
+       )
 #define X02(n,o) T(n,o, NOTRACE( std::cerr << __PRETTY_FUNCTION__  << " X02\n"; ) return n()((operand_t)(v[0]),(operand_t)(v[1])); )
 #define X002(n,o)  T(n,o, NOTRACE( std::cerr << __PRETTY_FUNCTION__  << " X002\n"; )  \
   /*return operation::nary((V)n ## _identity,&std::n<operand_t>::operator(),v ); */ \
@@ -477,7 +509,7 @@ inline static const std::map<std::string,std::function<operand_t(const std::vect
     if( first ){ \
       first=false; \
     }else{ \
-      ret = (operand_t)std::n<V>()(ret,x);		\
+      ret = ret && x;		\
     } \
   } \
   return ret; \
@@ -717,6 +749,9 @@ inline static const std::vector<methods> tmp={
 	  }
       },
 #else
+#ifdef debug_logical_and
+X(logical_and,2,&&,left_,logical_and)
+#endif
       OP_TABLE
 #endif
 #undef X
@@ -818,6 +853,26 @@ class optree:public BASE_T{
  using base_t::base_t;
  // optree(const base_t &o):base_t(o){}
  // optree(const OP &o):base_t(o){}
+  /* no viable conversion from 'const qtl::tree<qtl::operation<qtl::basic_interval<lex::scalar, void>, qtl::intvec<lex::scalar>>>' to 'qtl::expr' (aka 'optree<basic_interval<lex::scalar>, intvec<lex::scalar>>') */
+  optree(const base_t &o):base_t(o){
+    NOTRACE( std::cerr << __PRETTY_FUNCTION__ << "(" << o << ")\n"; )
+    NOTRACE( std::cerr << "=" << *this <<  "\n"; )
+  }
+#if 0
+  optree(const optree &o){
+   TRACE( std::cerr << __PRETTY_FUNCTION__ << '\n'; )
+   TRACE( std::cerr << o << '\n'; )
+     *this=o;
+   TRACE( std::cerr << *this << '\n'; )
+    }
+#endif
+#if 0
+  /*
+./qtl/expr.h:243:15: error: no matching constructor for initialization of 'qtl::expr' (aka 'optree<basic_interval<lex::scalar>, intvec<lex::scalar>>')
+           _val(ctx)=qtl::expr(qtl::operation(qtl::op::function,at_c<0>(_attr(ctx))),*at_c<1>(_attr(ctx)));
+                     ^         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  */
+#else
  optree(const OP &o,const std::vector<optree> &vo={}):base_t(o){
    std::vector<base_t> b;
    for( auto i:vo ){
@@ -825,6 +880,7 @@ class optree:public BASE_T{
    }
    base_t::branches=b;
  }
+#endif
  optree(enum op o,const std::vector<optree> &vo={}):base_t(OP(o)){
    std::vector<base_t> b;
    for( auto i:vo ){
@@ -888,7 +944,7 @@ class optree:public BASE_T{
        NOTRACE( std::cerr << "base_t(x)" << base_t(x) << '\n'; )
        auto y=(optree((base_t)x,x.branches)).bind(s);
      NOTRACE( std::cerr << "y=" << y << '\n'; )
-     b = (b||y);
+       b = (b||(bool)y);
      v.push_back(y);
    }
    if( !b ){ return {*this,b}; }
@@ -965,8 +1021,17 @@ template<typename V=qtl::interval,typename V1=std::vector<V>>
 	     std::cerr << (*this).value();
 	   }
      )
+       #if 0
        NOTRACE( std::cerr << (*this).value().stringify() << '=' << (*this).value().eval({},v) << '\n'; )
+       #else
+       auto e=(*this).value().eval({},v);
+     TRACE( std::cerr << (*this).value().stringify() << '=' << e << "\n"; )
+       kleen k=e;
+     TRACE( std::cerr << "(kleen)" << k << "\n"; )
+       return k;
+       #endif
        return (*this).value().eval({},v);
+     
    }  
  }; // end class optexpr
 #if 1
@@ -974,21 +1039,81 @@ template<typename V=qtl::interval,typename V1=std::vector<V>>
  qtl::expr operator o(const qtl::expr &l,const qtl::expr &r){	\
    return qtl::expr(qtl::op::p,{l,r}); \
  } \
+ /* template<class R>  qtl::expr operator o(const qtl::expr &l,const R &r){ return qtl::expr(qtl::op::p,{l,qtl::expr(r)}); } */  \
+template<class L>  qtl::expr operator o(const L &l,const qtl::expr &r){ return qtl::expr(qtl::op::p,{qtl::expr(l),r}); } \
  // end define
    X(*,multiplies)
    X(/,divides)
    X(+,plus)
    X(-,minus)
+#ifdef debug_logical_and__
+ qtl::expr operator &&(const qtl::expr &l,const qtl::expr &r){ 
+     TRACE( std::cout << __PRETTY_FUNCTION__ << "(" << l << "," << r << ")" << "\n"; )
+   return qtl::expr(qtl::op::logical_and,{l,r}); 
+ } 
+template<class L>  qtl::expr operator &&(const L &l,const qtl::expr &r){
+   TRACE( std::cout << __PRETTY_FUNCTION__ << "(" << l << "," << r << ")" << "\n"; )
+  return qtl::expr(qtl::op::logical_and,{qtl::expr(l),r});
+} 
+#else
+   X(&&,logical_and)
+#endif
+   X(||,logical_or)
+#undef X
+   qtl::expr et( const qtl::tree<qtl::operation<qtl::basic_interval<lex::scalar, void>, qtl::intvec<lex::scalar>>> & t){
+     TRACE( std::cout << __PRETTY_FUNCTION__ << "(" << t << ")" << "\n"; )
+       TRACE( std::cout << t.branches.size() << "\n"; )
+     qtl::expr e=t;
+     TRACE( std::cout << e.branches.size()  << "\n"; )
+     TRACE( std::cout << e  << "\n"; )
+       return e;
+   }
+#define X(O,p) \
+qtl::expr operator O(const qtl::expr &l,const qtl::expr &r){	\
+ switch( l.o ){ \
+   case qtl::op::logical_and: {\
+     TRACE( std::cout << __PRETTY_FUNCTION__ << "\n"; ) 	\
+       TRACE( std::cout << l << "\n"; ) \
+       TRACE(  std::cout << l.stringify() << "\n"; )	\
+   switch( l.branches[1].o ){ \
+    case qtl::op::less: case qtl::op::less_equal: case qtl::op::not_equal_to:  case qtl::op::equal_to: case qtl::op::greater_equal: case qtl::op::greater: { \
+     NOTRACE( std::cout << l.branches[1] << "\n"; ) \
+     NOTRACE( std::cout << r << "\n"; ) \
+       NOTRACE( std::cout << l.branches[1].branches.size() << "\n"; )	\
+      NOTRACE( std::cout << qtl::type_name<decltype( l.branches[1] )>() << "\n" ; ) \
+       qtl::expr l1=et(l.branches[1]);					\
+       NOTRACE( std::cout << l1.branches.size() << "\n"; )	\
+       NOTRACE( std::cout << l1 << "\n"; )	\
+      NOTRACE( std::cout << qtl::type_name<decltype( l1 )>() << "\n" ; ) \
+     NOTRACE( std::cout << operator O ( l.branches[1],r ) << "\n"; )	\
+     return qtl::expr(qtl::op::logical_and, {l, operator O ( l.branches[1],r ) }); \
+    };break; \
+      default: { return qtl::expr(qtl::op::p,{l,r}); }	\
+   };\
+      return qtl::expr(qtl::op::p,{l,r}); \
+   };break;								\
+ case qtl::op::less: case qtl::op::less_equal: case qtl::op::not_equal_to:  case qtl::op::equal_to: case qtl::op::greater_equal: case qtl::op::greater: { \
+   NOTRACE( std::cout << __PRETTY_FUNCTION__ << "\n"; )			\
+     NOTRACE( std::cout << l.branches.size() << "\n";)			\
+     NOTRACE( std::cout << l << "\n";) \
+     NOTRACE( std::cout << l.stringify() << "\n"; ) \
+     NOTRACE( std::cout << qtl::type_name<decltype(l.branches[1])>() << "\n"; )	\
+   return qtl::expr(qtl::op::logical_and,{l,qtl::expr(qtl::op::p,{l.branches[1],r})}); \
+ };break;								\
+    default: { return qtl::expr(qtl::op::p,{l,r}); }	\
+	    };						\
+}							\
+
+// end define
    X(<,less)
    X(<=,less_equal)
    X(!=,not_equal_to)
    X(==,equal_to)
    X(>=,greater_equal)
    X(>,greater)
-   X(&&,logical_and)
-   X(||,logical_or)
 #undef X
 #endif
+
    //   double operator~(const operation<double>&x){
    //     return !x;
    //  }
@@ -1007,7 +1132,8 @@ template<typename V=qtl::interval,typename V1=std::vector<V>>
    }
 }
 #if __INCLUDE_LEVEL__ + !defined __INCLUDE_LEVEL__ < 1+defined TEST_H
-using qtl::expr=optree<qtl::interval,intvec<lex::string>>;
+  //#include "interval.h"
+  //using qtl::expr=optree<qtl::interval,intvec<lex::string>>;
 qtl::expr e5(qtl::operation(qtl::op::lit,qtl::interval(5)));
 qtl::expr e2(qtl::operation(qtl::op::lit,qtl::interval(2)));
 qtl::expr e2p5(qtl::op::plus,{e5,e2});
@@ -1027,14 +1153,23 @@ int main(){
     std::cout << (long)e << std::endl;
     std::cout << e.re()  << std::endl;
 #else
+#if 0
+    ./qtl/container.h:520:2: error: multiple overloads of 'tuple' instantiate to the same signature 'void ()'
+ tuple(const T&... t/*,std::enable_if_t<sizeof...(t)!=0,int>=0*/):base_t( (... + string(t,eof(T::depth)) ) ),cache({t...}){
+ ^
+./qtl/tree.h:1150:32: note: in instantiation of template class 'lex::tuple<>' requested here
 std::cout << e2.stringify() << std::endl;
+                               ^
+#else
+std::cout << e2.stringify() << "\n";
+#endif
 exit(0);
-std::cout << e.eval() << std::endl;
-std::cout << e.stringify() << std::endl;
+ std::cout << e.eval() << "\n";
+std::cout << e.stringify() << "\n";
 #endif
 
     //    std::cout << operator+(1,2) << std::endl;
-          std::cout << std::operator+(std::string("a"),std::string("b")) << std::endl;
+          std::cout << std::operator+(std::string("a"),std::string("b")) << "\n";
 
 	  //          std::cout << std::operator+(1.2,2.3) << std::endl;
 	  //	  std::cout << (1).std::operator+(2) << std::endl;

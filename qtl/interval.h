@@ -5,6 +5,7 @@
 #include "container.h"
 #include <random>
 #include <cmath>
+#include <boost/math/special_functions/digamma.hpp>
 #include <functional>
 #include <cstddef>
 //#ifndef __clang__
@@ -50,7 +51,7 @@ using boundary_type_t = typename boundary_type<T>::type;
   enum class lim{inf=-1,sup=1};
   constexpr lim  infi=lim::inf;
   constexpr lim supre=lim::sup;
-#if 0
+#if 1
   lim operator-(const lim&l){return static_cast<lim>(-static_cast<int>(l));}
 #endif
   std::ostream& operator<<(std::ostream& os, lim s){
@@ -110,6 +111,7 @@ using boundary_type_t = typename boundary_type<T>::type;
     }
 #endif
   }; // end class sign
+  const sign ε=sign(lim::sup);;
   sign operator+(lim a,lim b){
     //    return a==b?(a==infi?sign::minus:sign::plus):sign::zero;
        return static_cast<sign>(static_cast<int>(a)+static_cast<int>(b)-1);
@@ -180,6 +182,14 @@ namespace qtl{
     operator sign()const{
       return (sign)value()||(sign)ma();
     }
+#if 0
+  friend basic_boundary<S> operator+(const S &v,const sign&s){
+    return basic_boundary<S>(v,s);
+  }
+  friend basic_boundary operator-(const S &v,const sign&s){
+    return basic_boundary<S>(v,-s);
+  }
+#endif
     std::ostream& write( std::ostream& os )const{
       qtl::ios_base::fmtflags f;
       os >> f;
@@ -314,6 +324,16 @@ namespace qtl{
     return ret;
   }
   }; // end class basic_boundary
+#if 1
+  template<typename S>
+  basic_boundary<S> operator+(const S &v,const lim &l){
+    return basic_boundary<S>(v,l);
+  }
+  template<typename S>
+  basic_boundary<S> operator-(const S &v,const lim &l){
+    return basic_boundary<S>(v,-l);
+  }
+#endif
   template<typename S=lex::number, typename L=sign, lim i=infi>
    basic_boundary<S,L,i> operator/(double a,const basic_boundary<S,L,i> &b){
      /**/NOTRACE( std::cout << __PRETTY_FUNCTION__ << "(" << a << ", " << b << ")" << std::endl; )
@@ -497,22 +517,6 @@ namespace qtl{
 ] ( ) [  F
  
   */
-#endif
-    
-#if 0
-  class partial_ordering{
-/*
-<  <= == >=  > !=   < = >
-T  T  F  F  F  T    T F F   0 <=> 1
-F  T  T  T  F  F    F T F   0 <=> 0
-F  F  F  T  T  T    F F T   0 <=> -1
-U  T  U  U  F  U    U U F   0 <=> (0<=x::x<=1)
-U  U  F  U  U  T    U F U   0 <=> (x::x!=0)
-F  U  U  T  U  U    F U U   0 <=> (-1<=x::x<=0)
-U  U  U  U  U  U    U U U   0 <=> (-1<=x::x<=1)
-
-*/
-}; // end class partial_ordering
 #endif
     kleen operator<(const basic_interval &r)const{
       NOTRACE( std::cerr << __PRETTY_FUNCTION__ << "(" << *this << ", " << r << ')' << '\n'; ) // "f"_s, (  x::x <= "f"_s ))  // ("78"_s, ( "12"_s < x::x  ))
@@ -852,46 +856,194 @@ bool contains0()const{
       return *this*basic_interval(1/b.u(),1/b.l());
    }
 #endif
-  basic_interval operator^(const basic_interval &b)const{
+
+     // ^ U+005E Circumflex Accent  (xor)
+
+     // U+00B2 - U+00B5
+
+     // U+00BC - U+00BE
+
+     // U+00C0 - U+00D6
+
+     // U+00D8 - U+00F6
+
+     // U+00F8 - U+167F  LATIN SMALL LETTER O WITH STROKE - CANADIAN SYLLABICS BLACKFOOT W
+     // ø U+00F8 LATIN SMALL LETTER O WITH STROKE
+     // ǃ U+01C3  latin letter exclamation mark , (post)alveolar click (ipa)
+     // ˄ U+02C4 Modifier Letter Up Arrowhead
+     // ˆ U+02C6 Modifier Letter Circumflex Accent
+     // ᐃ U+1403 Canadian Syllabics I
+     // ᐞ U+141E Canadian Syllabics Glottal Stop
+#define ᐃ ˄
+#define ᐞ ˄
+#define ˆ ˄
+
+     // U+1681 - U+180D
+
+     // U+200B - U+200D	
+
+     // U+202A - U+202E
+
+     // U+203F - U+2040
+
+     // U+2054
+     
+     // U+2060 - U+218F  WORD JOINER - TURNED DIGIT THREE
+     
+     // ↑ U+2191 Upwards Arrow
+     // ⇑ U+21D1 Upwards Double Arrow
+     // ⇡ U+21E1 Upwards Dashed Arr
+     // ⇧ U+21E7 Upwards White Arro
+     // ⌃ U+2303 Up Arrowhead
+     // ⍐ U+2350 Apl Functional Symbol Quad Upwards Arrow
+     // ⍓ U+2353 Apl Functional Symbol Quad Up Caret
+
+
+     // U+2460 - U+24FF CIRCLED DIGIT ONE - NEGATIVE CIRCLED DIGIT ZERO
+
+     //  ▲ U+25B2 Black Up-Pointing 
+     // ❗ U+2757 Heavy Exclamation Mark Symbol Emoji
+
+
+     // U+2776 - U+2793 DINGBAT NEGATIVE CIRCLED DIGIT ONE - DINGBAT NEGATIVE CIRCLED SANS-SERIF NUMBER TEN	
+
+     // ➚ U+279A Heavy North East Arrow
+     // ⬆ U+2B06 Upwards Black Arrow Emoji
+     // ⮉  U+2B89 Upwards Black Circled White Arrow
+     // ⮝  U+2B9D Black Upwards Equilateral Arrowhead
+
+
+    // U+2C00 - U+2DFF  JAPANESE INDUSTRIAL STANDARD SYMBOL - IDEOGRAPHIC NUMBER ZERO
+
+     // U+2E80 - U+2FFF  CJK RADICAL REPEAT - IDEOGRAPHIC DESCRIPTION CHARACTER OVERLAID
+
+     // U+3004 - U+3007 JAPANESE INDUSTRIAL STANDARD SYMBOL - IDEOGRAPHIC NUMBER ZERO
+     
+     // U+FE47 - U+FFFD PRESENTATION FORM FOR VERTICAL LEFT SQUARE BRACKET - REPLACEMENT CHARACTER
+
+     // U+10000 - U+1FFFD LINEAR B SYLLABLE B008 A - CHEESE WEDGE (U+1F9C0)
+#define 🠑  ˄ // 🠑  U+1F811 Upwards Arrow with Small Equilateral Arrowhead
+#define 🠕  ˄ // 🠕  U+1F815 Upwards Arrow with Equilateral Arrowhead
+#define 🡅  ˄ // 🡅  U+1F845 Upwards Heavy Arrow
+#define 🡡  ˄ // 🡡  U+1F861 Wide-Headed Upwards Light Barb Arrow
+
+     // U+20000 - U+2FFFD
+
+   basic_interval ˄(const basic_interval &p,const basic_interval &m)const{ // modular exponentiation U+02C4 
+    return (*this).˄(p) % m;  // todo  O(lg(m)) (this->^(floor(p),m) * this->^(p-floor(p))) % m
+  }
+  basic_interval  ˄(const int &p,const basic_interval &m)const{ // modular exponentiation
+    return (*this).˄(p) % m;  // todo  O(lg(m))
+  }
+     basic_interval  ˄(const basic_interval &p)const{ // pow
+      if( is_point() && p.is_point() ){
+      return (lex::number)std::pow((lex::number)this->l().value(),(lex::number)p.l().value());
+      }
+      std::cerr << __PRETTY_FUNCTION__ << " not implemented\n"; // todo
+      return *this;
+    }
+
+     // ǃ U+01C3 
+   basic_interval ǃ()const{ // factorial
+     //    basic_interval operator﹗(const basic_interval &b)const{ // factorial
+    if( is_point() ){
+      return (lex::number)std::lgamma((double)(lex::number)this->l().value()-1.0);
+    }
+    // https://en.wikipedia.org/wiki/Particular_values_of_the_gamma_function#Other_constants
+    /*
+==Other constants==
+The gamma function has a [[local minimum]] on the positive real axis
+
+:<math>x_{\min} = 1.461632144968362341262 \ldots\,</math> {{OEIS2C|A030169}}
+
+with the value
+
+:<math>\Gamma\left(x_{\min}\right) = 0.885603194410888 \ldots\,</math> {{OEIS2C|A030171}}.
+
+Integrating the [[reciprocal gamma function]] along the positive real axis also gives the [[Fransén–Robinson constant]].
+
+On the negative real axis, the first local maxima and minima (zeros of the [[digamma function]]) are:
+
+{| class="wikitable"
+|+ Approximate local extrema of {{math|Γ(''x'')}}
+! {{mvar|x}}!!{{math|Γ(''x'')}}!![[OEIS]]
+|-
+| {{val|−0.5040830082644554092582693045}} || {{val|−3.5446436111550050891219639933}} || {{OEIS2C|A175472}}
+|-
+| {{val|−1.5734984731623904587782860437}} || {{0|−}}{{val|2.3024072583396801358235820396}} || {{OEIS2C|A175473}}
+|-
+| {{val|−2.6107208684441446500015377157}} || {{val|−0.8881363584012419200955280294}} || {{OEIS2C|A175474}}
+|-
+| {{val|−3.6352933664369010978391815669}} || {{0|−}}{{val|0.2451275398343662504382300889}} || {{OEIS2C|A256681}}
+|-
+| {{val|−4.6532377617431424417145981511}} || {{val|−0.0527796395873194007604835708}} || {{OEIS2C|A256682}}
+|-
+| {{val|−5.6671624415568855358494741745}} || {{0|−}}{{val|0.0093245944826148505217119238}} || {{OEIS2C|A256683}}
+|-
+| {{val|−6.6784182130734267428298558886}} || {{val|−0.0013973966089497673013074887}} || {{OEIS2C|A256684}}
+|-
+| {{val|−7.6877883250316260374400988918}} || {{0|−}}{{val|0.0001818784449094041881014174}} || {{OEIS2C|A256685}}
+|-
+| {{val|−8.6957641638164012664887761608}} || {{val|−0.0000209252904465266687536973}} || {{OEIS2C|A256686}}
+|-
+| {{val|−9.7026725400018637360844267649}} || {{0|−}}{{val|0.0000021574161045228505405031}} || {{OEIS2C|A256687}}
+|}
+    */
+    /*
+
+D[ArcCsch[Gamma[x]],x] =  -(PolyGamma[0, x]/(Sqrt[1 + Gamma[x]^(-2)]*Gamma[x]))
+arcsinh((sqrt(x^2+1)/e)^x /Gamma[x])/(1/2+log sqrt(x^2+e^2)
+ PolyGamma[0, x]
+
+
+(2*Arcsinh[(Sqrt[1 + x^2]/e)^x/Gamma[x]])/(Sqrt[Pi] + Log[1 + x^2])
+
+     */
+    std::cerr << __PRETTY_FUNCTION__ << " not implemented\n"; // todo 
+    return *this;
+  }
+#if 0
+  basic_interval ＾(const basic_interval &b,const basic_interval &m)const{
     if( is_point() && b.is_point() ){
       return (lex::number)std::pow((lex::number)this->l().value(),(lex::number)b.l().value());
     }
     std::cerr << __PRETTY_FUNCTION__ << " not implemented\n";
     return *this;
   }
-
+#endif
   basic_interval operator&&(const basic_interval &b)const{  
     static auto cp=[](const  basic_interval &a, const  basic_interval &b)->basic_interval{ 
+      TRACE( std::cout << __PRETTY_FUNCTION__ << "(" << a << ", " << b << ")" << std::endl; )
       assert( a.is_connected() && !b.is_connected() );
 	if( a.u() <= b.u() || b.l() <= a.l() || ( a.l() < b.u() && b.l() < a.u() ) ){
            NOTRACE( std::cerr << __LINE__ << '\n'; )
 	  return a;
         }
         if( a.l() < b.u() ){
-           NOTRACE( std::cerr << __LINE__ << '\n'; )
+           TRACE( std::cerr << __LINE__ << '\n'; )
 	  return {a.l(),b.u()};
         }
         if( b.l() < a.u() ){
-         NOTRACE( std::cerr << __LINE__ << '\n'; )
+         TRACE( std::cerr << __LINE__ << '\n'; )
 	  return {b.l(),a.u()};
         }
       //	return  {{0,infi},{0,infi}};
       return  {b_t((S)0,infi),b_t((S)0,infi)};
     };
 
-    NOTRACE( std::cerr << __PRETTY_FUNCTION__ << '\n'; )
+    TRACE( std::cout << __PRETTY_FUNCTION__ << "(" << *this << ", " << b << ")" << std::endl; )
     if( is_connected() ){ // 
       if( b.is_connected() ){
-        NOTRACE( std::cerr << __LINE__ << '\n'; )
+        TRACE( std::cerr << __LINE__ << '\n'; )
         auto lb=max(l(),b.l());
         auto ub=min(u(),b.u());
-        NOTRACE( std::cerr << lb << "=max(" << l()<< "," << b.l() << ")\n"; );
-        NOTRACE( std::cerr << ub << "=min(" << u()<< "," << b.u() << ")\n"; );
+        TRACE( std::cerr << lb << "=max(" << l()<< "," << b.l() << ")\n"; );
+        TRACE( std::cerr << ub << "=min(" << u()<< "," << b.u() << ")\n"; );
         if( lb<ub ){ 
-          NOTRACE( std::cerr << __LINE__ << '\n'; )
+          TRACE( std::cerr << __LINE__ << '\n'; )
           return {lb,ub};
         }else{
-	  NOTRACE( std::cerr << __LINE__ << '\n'; )
+	  TRACE( std::cerr << __LINE__ << '\n'; )
 	    return {b_t(0,infi),b_t(0,infi)}; 
         }
       }else{ 
@@ -1278,6 +1430,49 @@ namespace qtl{
 }
 #if __INCLUDE_LEVEL__ + !defined __INCLUDE_LEVEL__ < 1+defined TEST_H
 #include "bounds.h"
+#if 1
+class partial_ordering:public qtl::basic_interval<lex::scalar>{
+/*
+<  <=  ==  >=   >   !=   < = >
+T   T   F   F   F   T    T F F   0 <=> 1
+F   T   T   T   F   F    F T F   0 <=> 0
+F   F   F   T   T   T    F F T   0 <=> -1
+U   T   U   U   F   U    U U F   0 <=> (0<=x::x<=1)
+U   U   F   U   U   T    U F U   0 <=> (x::x!=0)
+F   U   U   T   U   U    F U U   0 <=> (-1<=x::x<=0)
+U   U   U   U   U   U    U U U   0 <=> (-1<=x::x<=1)
+*/
+public:
+inline static const basic_interval less{(x::x)<(lex::scalar)0};
+inline static const basic_interval equivalent = (x::x==0);
+inline static const basic_interval greater{(lex::scalar)0<x::x};
+inline static const basic_interval unordered{-1<=x::x<=1};
+
+inline static const basic_interval lt{x::x<(lex::scalar)0};
+inline static const basic_interval lteq{x::x<=(lex::scalar)0};
+inline static const basic_interval eq{x::x==0};
+inline static const basic_interval neq{x::x!=0};
+inline static const basic_interval gt{(lex::scalar)0<x::x};
+inline static const basic_interval gteq{x::x>=(lex::scalar)0};
+}; // end class partial_ordering
+
+qtl::interval operator<=>(const qtl::interval &lhs,const qtl::interval&rhs){
+  if( lhs.is_connected() && rhs.is_connected() ){
+    if( lhs.u() <= rhs.l() ){ return partial_ordering::lt; }
+    if( lhs.l() >= rhs.u() ){ return partial_ordering::gt; }
+    if( lhs.is_point() && rhs.is_point() ){
+      return lhs.u().value() == rhs.u().value() ? partial_ordering::eq : partial_ordering::neq;
+    }
+    if( lhs.u().value() == rhs.l().value() ){ return partial_ordering::lteq; }
+    if( lhs.l().value() == rhs.u().value() ){ return partial_ordering::gteq; }
+  }
+  if( lhs.is_connected() || rhs.is_connected() ){
+    if( lhs.u() <= rhs.l() && lhs.l() >= rhs.u() ){ return partial_ordering::neq; }
+  }
+  return partial_ordering::unordered;
+}
+#endif
+
 //#pragma message XSTR(__INCLUDE_LEVEL__)
 //#pragma message XSTR(__FILE__)
 //#pragma message XSTR(__BASE_FILE__)

@@ -58,6 +58,7 @@ namespace qtl{
       }
     }
     void put1(uint_fast8_t i){ // add another bit of random information
+      //std::cerr << __FUNCTION__ << "(" << (int)i << ")";
       //assert(bounds[0]<bounds[1]);
       norm();
       //assert(bounds[0]<bounds[1]);
@@ -75,9 +76,11 @@ namespace qtl{
       NOTRACE( std::cerr << std::hex << bounds << ", " << pre << ", " << pre_ << "\n";  )
     }
     std::optional<int> get6(){
+      //std::cerr << __PRETTY_FUNCTION__ ;
       // get 6 bits (so it can be human readable )
-      if( in.eof() ){ return {}; }
+      if( in.eof() ){  return {}; }
       int ret=in.get();
+      //std::cerr << "=" << ret << "\n";
       ++pos;
       if( ret == '\n' ){ return get6(); }// skip eol (to allow human readability )
       if( ret=='\025' ){
@@ -88,15 +91,29 @@ namespace qtl{
     }
     int seed(){  // add more random information, from input, or fallback to std::random
       std::optional<int>s;
-      put6( (s=get6())?*s:/*std::uniform_int_distribution<>(0,(1<<CHAR_BIT)-1)(gen) */0x32 );
+      if( (s=get6()) ){
+	put6( *s );
+      }else{
+	int r=std::uniform_int_distribution<>(0,31)(gen);
+        put6( r );
+        std::cerr << __FUNCTION__ << "=eof," << r << "," << (int)pre.size() << "\n" ;
+      }
       return pre.size();
     }    
     int rand01(){ // return a random bit
-      if( pre.size() ){ auto ret=pre.front(); pre.pop(); if( pre.empty() && pre_ ){  pre.push(!ret); pre_-=1; } return ret; }
+      if( pre.size() ){ auto ret=pre.front(); pre.pop(); if( pre.empty() && pre_ ){  pre.push(!ret); pre_-=1; }
+	//std::cerr << __PRETTY_FUNCTION__ << "=" << (int)ret << "\n";
+	return ret;
+      }
       norm() || seed();
       return rand01();
     }
   public:
+    void seed(unsigned int s){
+      pos=0;
+      gen = std::default_random_engine(s);
+    }
+
     long tellg(){
       return pos;
     }
@@ -104,11 +121,21 @@ namespace qtl{
       if( n<=pos ){ return; }
       flush();
       for( /*pos=pos*/;pos<n;++pos ){
+	if( !in.good() ){
+	   std::cerr << "seek(" << n << ")" << pos << "\n";
+	   return;
+	}
         in.get();
       }
     }
     randstream(std::istream &s=std::cin):in(s){
+      std::cerr << __PRETTY_FUNCTION__ ; 
+      std::cerr << "in.peek()=" << (int) in.peek();
+      pos=0;
       gen = std::default_random_engine(rd());
+    }
+    bool eof(){
+      return pre.empty()&&in.eof();
     }
     int uniform_int_distribution(long b=rand_1-1){ // Produces random integer values i, uniformly distributed on the closed interval [0, b]
      if( b==0 ){ return 0; }
@@ -122,6 +149,7 @@ namespace qtl{
       return a+uniform_int_distribution(b-a);
     }
     bool bernoulli_distribution(double p){ // return true with probability p
+      //std::cerr << __FUNCTION__ << "(" << p <<  ")\n";
       if( p<=0 ){ return false; }else if( p>=1 ){ return true; }
       if( rand01() ){ 
 	return p<0.5?(put(p),false):bernoulli_distribution(p+(p-1));
@@ -129,7 +157,10 @@ namespace qtl{
 	return p>0.5?(put(p),true):bernoulli_distribution(p+p);
       }
     }
-    auto operator()(int a,int b){ return uniform_int_distribution(a,b); }
+    auto operator()(int a,int b){
+      //std::cerr << __FUNCTION__ << "(" << a << "," << b << ")\n";
+      return uniform_int_distribution(a,b);
+    }
     auto operator()(double p){ return bernoulli_distribution(p); }
 
     template<typename T>
