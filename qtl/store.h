@@ -2827,21 +2827,28 @@ template<typename R>
      }
    lval(const row &p,  const optexpr &e):lval(path::requirements(p,e)){}
    lval(const path::requirements &r) : predicate(r), l(rp){
-       NOTRACE(std::cerr << __PRETTY_FUNCTION__ << "(" << &tr << " : " << t.use_count() << ":" << t.get() << ")\n";)
-       NOTRACE(std::cerr << __PRETTY_FUNCTION__ << "(";
-	       for(auto x
-		   : v){ std::cerr << x << ", "; } std::cerr
-	       << ")\n";)
-      /**/NOTRACE(if(e.has_value()){ std::cerr << __PRETTY_FUNCTION__ << '(' << e.value().stringify() << ")\n"; })
+     NOTRACE(std::cerr << __PRETTY_FUNCTION__ << "(" << &tr << " : " << t.use_count() << ":" << t.get() << ")\n";)
+       /*NO*/TRACE( std::cerr << __PRETTY_FUNCTION__ << "(" << r << ")" << "\n"; );
+
+      /**/NOTRACE(if(e.has_value()){ std::cerr << __FUNCTION__ << '(' << e.value().stringify() << ")\n"; })
      }
    lval(const expr &e)
        : predicate((std::vector<lex::scalar>){}, e)
        , l(rp){
        //t=&trie;
+       TRACE( std::cerr << __PRETTY_FUNCTION__ << "\n"; )
+       TRACE( std::cerr << __FUNCTION__ << ".predicate=" << this->predicate << "\n"; )
      }
      lval(const lval &l):lval(l.predicate){
+       TRACE( std::cerr << __PRETTY_FUNCTION__ << "\n"; )
+	 TRACE( std::cerr << __FUNCTION__ << ".predicate=" << this->predicate << "\n"; )
      }
-     lval operator=(const lval&l){ return lval(l); }
+#if 0
+     lval operator=(const lval&l){
+       TRACE( std::cerr << __PRETTY_FUNCTION__ <<  "\n"; )
+       return lval(l);
+     }
+#endif
      operator std::vector<std::shared_ptr<class lattice>>() const {
        std::vector<std::shared_ptr<class lattice>> ret;
        for(auto x : *l){
@@ -2999,7 +3006,7 @@ freed by thread T0 here:
        bool operator!=(const iterator &r){
 	 return base_it != r.base_it;
        }
-       iterator operator++(){
+       iterator & operator++(){
 	 ++base_it;
 	 return *this;
 	 /*
@@ -3475,16 +3482,16 @@ namespace qtl{
         auto operator!=(nullptr_t){
 	  /*NO*/TRACE( std::cerr << __PRETTY_FUNCTION__ << '\n'; )
 	  NOTRACE( std::cerr << std::distance(m.it(),m.end()) <<  std::boolalpha << (s.it()!=s.end()) << '\n'; )
-	    TRACE( std::cerr << __LINE__ << " " <<  s.m_promise << "\n"; )
+	    TRACE( std::cerr << __LINE__ << " " <<  s->m_promise << "\n"; )
 	  if( !(m/*.it()*/!=m.end() && s/*.it()*/!=s.end()) ){
-	    TRACE( std::cerr << __LINE__ << " " <<  s.m_promise << "\n"; )
+	    TRACE( std::cerr << __LINE__ << " " <<  s->m_promise << "\n"; )
             if( srows!=mrows ){
 	      TRACE( std::cerr << srows << " != " << mrows << "\n"; )
             }
             if( !(m!=m.end()) ){
-	    TRACE( std::cerr << __LINE__ << " " <<  s.m_promise << "\n"; )
+	    TRACE( std::cerr << __LINE__ << " " <<  s->m_promise << "\n"; )
                     if( s!=s.end() ){ 
-	    TRACE( std::cerr << __LINE__ << " " <<  s.m_promise << "\n"; )
+	    TRACE( std::cerr << __LINE__ << " " <<  s->m_promise << "\n"; )
 		      TRACE( std::cerr << "m==m.end() but *s=" << *s << "\n"; )
    		      TRACE( std::cerr << "mrows=" << mrows << "\n"; )
    		      TRACE( std::cerr << "srows=" << srows << "\n"; )
@@ -3521,7 +3528,14 @@ namespace qtl{
 	 s=r;
 	 return *this;
        }
-       lval operator[](const expr &t){ lval ret=*this; ret.m=ret.m[t]; ret.s=ret.s[t]; return ret; }
+       lval operator[](const expr &t){
+	 TRACE( std::cerr << __PRETTY_FUNCTION__ << "(" << t << ")" << '\n'; )
+	 lval ret=*this;
+	 ret.m=ret.m[t];
+      	 ret.s.predicate.expr()=t;
+         TRACE( std::cerr << "ret.s.predicate=" << ret.s.predicate << "\n"; )
+	 return ret;
+       }
     }; // end class test::lval
      template<typename T> 
        lval operator[](T t){ return lval(t); }
