@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dtree - Fast String Searching with DAG</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        header p {
+            font-size: 1.3rem;
+            opacity: 0.95;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .section {
+            background: white;
+            margin: 2rem 0;
+            padding: 2.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            color: #667eea;
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+
+        h3 {
+            color: #764ba2;
+            font-size: 1.4rem;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .feature-card {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 8px;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .feature-card h3 {
+            color: #667eea;
+            margin-top: 0;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #e83e8c;
+        }
+
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 1.5rem;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.8rem 1.5rem;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s ease;
+            margin: 0.5rem;
+        }
+
+        .btn:hover {
+            background: #764ba2;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 1rem;
+            border-left: 4px solid #ffc107;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+
+        ul {
+            margin-left: 2rem;
+            margin-top: 1rem;
+        }
+
+        li {
+            margin: 0.5rem 0;
+        }
+
+        a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .requirements {
+            background: #e7f3ff;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            background: #2d2d2d;
+            color: white;
+            margin-top: 3rem;
+        }
+
+        .concepts-grid {
+            display: grid;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .concept-item {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
+        }
+
+        .concept-item code {
+            display: block;
+            margin: 0.5rem 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>dtree</h1>
+        <p>Very fast and flexible string searching using a DAG (Directed Acyclic Graph)</p>
+        <div style="margin-top: 2rem;">
+            <a href="#features" class="btn">Features</a>
+            <a href="#installation" class="btn">Installation</a>
+            <a href="#quickstart" class="btn">Quick Start</a>
+            <a href="https://github.com/questrel/dtree" class="btn btn-secondary" target="_blank">GitHub</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <section id="overview" class="section">
+            <h2>Overview</h2>
+            <p>
+                <strong>dtree</strong> is a powerful C++ header-only library that enables very fast and flexible
+                searching of strings based on multiple criteria using a directed acyclic graph (DAG) structure.
+                It combines interval arithmetic with three-valued logic to provide sophisticated query capabilities.
+            </p>
+            <div class="highlight">
+                <strong>Header-only library</strong> - Easy to integrate into your C++ projects
+            </div>
+        </section>
+
+        <section id="features" class="section">
+            <h2>Key Features</h2>
+            <div class="features">
+                <div class="feature-card">
+                    <h3>DAG-Based Search</h3>
+                    <p>Utilizes directed acyclic graphs for efficient and flexible string searching across multiple criteria.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Interval Arithmetic</h3>
+                    <p>Advanced interval arithmetic with support for projective infinity and three-valued comparison logic.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Expression Trees</h3>
+                    <p>Build and evaluate complex expression trees with support for arithmetic and logical operators.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Three-Valued Logic</h3>
+                    <p>Implements Kleene logic (True/False/Maybe) for sophisticated query predicates.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>SQL Interface</h3>
+                    <p>Toy SQL parser that translates simple SQL queries into native dtree queries.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Memory Comparison Ordering</h3>
+                    <p>Custom string and number types that maintain memcmp ordering for optimal performance.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="concepts" class="section">
+            <h2>Core Concepts</h2>
+            <div class="concepts-grid">
+                <div class="concept-item">
+                    <h3>qtl::string</h3>
+                    <p>Like <code>std::string_view</code>, can contain any std::string while maintaining memcmp ordering.
+                    Can also contain out-of-band separator tokens.</p>
+                </div>
+                <div class="concept-item">
+                    <h3>qtl::number</h3>
+                    <p>Contains values from arithmetic types or decimal float, stored with memcmp ordering.
+                    Supports range E−6176 to E+6144 (IEEE decimal128 range).</p>
+                </div>
+                <div class="concept-item">
+                    <h3>qtl::kleen</h3>
+                    <p>Three-valued logic implementation: True/False/Maybe. Based on
+                    <a href="https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics" target="_blank">Kleene logic</a>.</p>
+                </div>
+                <div class="concept-item">
+                    <h3>qtl::interval</h3>
+                    <p>Interval arithmetic with trinary logic comparisons. Intervals may contain the projective infinity,
+                    allowing sensible division by intervals containing zero.</p>
+                </div>
+                <div class="concept-item">
+                    <h3>qtl::expr</h3>
+                    <p>Expression trees supporting arithmetic and logical operators. Parse strings into expression trees
+                    and evaluate them with interval arithmetic.</p>
+                </div>
+                <div class="concept-item">
+                    <h3>qtl::store</h3>
+                    <p>Database abstraction using interval arithmetic and trinary logic to query data with expression predicates.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="requirements" class="section">
+            <h2>Requirements</h2>
+            <div class="requirements">
+                <ul>
+                    <li><strong>C++ Standard:</strong> C++17 or later</li>
+                    <li><strong>Compiler:</strong> Clang 7.0.1+ or Clang 10.0.0+</li>
+                    <li><strong>Boost:</strong> Boost 1.69+ (for Spirit X3 parser)</li>
+                    <li><strong>Optional:</strong> boost::multiprecision::cpp_dec_float for decimal float support</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="installation" class="section">
+            <h2>Installation</h2>
+
+            <h3>Ubuntu Installation</h3>
+            <pre><code>sudo apt-get update
+sudo apt install clang
+sudo apt install make
+
+# Install Boost 1.70+
+wget -c 'http://sourceforge.net/projects/boost/files/boost/1.70.0/boost_1_70_0.tar.bz2'
+bunzip2 boost_1_70_0.tar.bz2
+tar -xvof boost_1_70_0.tar
+cd boost_1_70_0/
+./bootstrap.sh --with-toolset=clang
+./b2 headers
+sudo ./b2 install
+
+# Clone the repository
+git clone https://github.com/questrel/dtree.git
+cd dtree
+make</code></pre>
+
+            <h3>Docker Installation</h3>
+            <pre><code># Build the Docker image
+sudo docker build --tag dtree:0.1 .
+
+# Run the container
+sudo docker run -it dtree:0.1
+
+# Inside the container, run tests
+bash test.bash</code></pre>
+
+            <div class="highlight">
+                <strong>Note:</strong> You will need a substantial VM to run dtree. Testing was done on
+                n1-standard-4 (4 vCPUs, 15 GB memory) on GCP. The test may take several minutes and up to 32 GB.
+            </div>
+        </section>
+
+        <section id="quickstart" class="section">
+            <h2>Quick Start</h2>
+
+            <h3>Basic Usage</h3>
+            <p>dtree is a header-only library. To use it, include the appropriate header in your C++ code:</p>
+            <pre><code>#define TEST_H "qtl/module.h"
+#include TEST_H</code></pre>
+
+            <h3>Building Tests</h3>
+            <pre><code># Make all test executables
+make
+
+# Build with debug diagnostics
+make CXX='clang++ -DDEBUG'
+
+# Run fuzz testing
+make module.fuzz.out
+AFL_NO_ARITH=1 AFL_EXIT_WHEN_DONE=1 /usr/local/bin/afl/afl-fuzz \
+  -i- -x fuzz/module.dict -o fuzz/module.out -- ./module.fuzz.out</code></pre>
+
+            <h3>Example SQL Query</h3>
+            <p>After running <code>bash test.bash</code>, you can test queries:</p>
+            <pre><code>SELECT ASCII_word, NUMERIC_TO_STRING(letter_product,letter_sum)
+FROM word
+WHERE letter_product*letter_sum<=letter_product+letter_sum
+
+# Output: "A"_s,"1, 1"_s,
+
+# Test basic query
+SELECT * FROM word</code></pre>
+        </section>
+
+        <section id="documentation" class="section">
+            <h2>Documentation</h2>
+            <p>For detailed information about the concepts and architecture:</p>
+            <ul>
+                <li><a href="https://github.com/questrel/dtree/blob/main/CONCEPTS.md" target="_blank">CONCEPTS.md</a> - Detailed explanation of dtree concepts and components</li>
+                <li><a href="https://github.com/questrel/dtree/blob/main/QUICKSTART.md" target="_blank">QUICKSTART.md</a> - Quick start guide with installation instructions</li>
+                <li><a href="https://github.com/questrel/dtree/blob/main/CONTRIBUTING.md" target="_blank">CONTRIBUTING.md</a> - Contributor guidelines</li>
+                <li><a href="https://github.com/questrel/dtree/blob/main/CODE_OF_CONDUCT.md" target="_blank">CODE_OF_CONDUCT.md</a> - Community code of conduct</li>
+                <li><a href="https://github.com/questrel/dtree/blob/main/LICENSE" target="_blank">LICENSE</a> - Project license information</li>
+            </ul>
+        </section>
+
+        <section id="modules" class="section">
+            <h2>Library Modules</h2>
+            <div class="concepts-grid">
+                <div class="concept-item">
+                    <strong>qtl/out.h</strong> - Templates for printing STL containers with proper formatting
+                </div>
+                <div class="concept-item">
+                    <strong>qtl/string.h</strong> - String type with memcmp ordering and separator tokens
+                </div>
+                <div class="concept-item">
+                    <strong>qtl/container.h</strong> - Vector and tuple types stored with memcmp ordering
+                </div>
+                <div class="concept-item">
+                    <strong>qtl/number.h</strong> - Numeric types with memcmp ordering
+                </div>
+                <div class="concept-item">
+                    <strong>qtl/bool.h</strong> - Three-valued Kleene logic implementation
+                </div>
+                <div class="concept-item">
+                    <strong>qtl/bounds.h</strong> - Boundary types for distinguishing open and closed interval endpoints
+                </div>
+                <div class="concept-item">
+                    <strong>qtl/interval.h</strong> - Interval arithmetic with trinary logic
+                </div>
+                <div class="concept-item">
+                    <strong>qtl/tree.h</strong> - Generic expression tree implementation
+                </div>
+                <div class="concept-item">
+                    <strong>qtl/operators.h</strong> - Operator table and precedence hierarchy
+                </div>
+                <div class="concept-item">
+                    <strong>qtl/expr.h</strong> - String-to-expression-tree parser using Boost Spirit X3
+                </div>
+                <div class="concept-item">
+                    <strong>qtl/store.h</strong> - Database abstraction with interval-based queries
+                </div>
+                <div class="concept-item">
+                    <strong>qtl/sql.h</strong> - SQL parser for converting queries to store operations
+                </div>
+                <div class="concept-item">
+                    <strong>qtl/randstream.h</strong> - Random stream transformation using arithmetic coding
+                </div>
+            </div>
+        </section>
+
+        <section id="contributing" class="section">
+            <h2>Contributing</h2>
+            <p>Contributions are welcome! Please see <a href="https://github.com/questrel/dtree/blob/main/CONTRIBUTING.md" target="_blank">CONTRIBUTING.md</a> for guidelines.</p>
+            <p>All contributors are expected to abide by the <a href="https://github.com/questrel/dtree/blob/main/CODE_OF_CONDUCT.md" target="_blank">code of conduct</a>.</p>
+        </section>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 dtree Project. Licensed under the terms in LICENSE file.</p>
+        <p><a href="https://github.com/questrel/dtree" style="color: #667eea;">View on GitHub</a></p>
+    </footer>
+</body>
+</html>
