@@ -1,156 +1,160 @@
 #pragma once
 #include <coroutine>
-#include <vector>
 #include <cassert>
 
-// C++20 std::generator replacement for cppcoro::recursive_generator
-// Supports: co_yield value; co_yield nested_generator;
+// C++20 recursive_generator — direct port of cppcoro's m_root/m_parentOrLeaf design.
+// Correctly handles: co_yield value; co_yield nested_generator;
 
 template<typename T>
 struct recursive_generator {
     struct promise_type;
     using handle_type = std::coroutine_handle<promise_type>;
-    
+
     struct promise_type {
-        T current_value;
-        std::vector<handle_type> nested;
-        
-        recursive_generator get_return_object() { 
-            return recursive_generator{handle_type::from_promise(*this)}; 
+        T*            m_value      = nullptr;
+        promise_type* m_root;        // always points to the root promise
+        promise_type* m_parentOrLeaf;// root: current leaf; non-root: parent
+
+        promise_type() noexcept : m_root(this), m_parentOrLeaf(this) {}
+        promise_type(const promise_type&) = delete;
+        promise_type(promise_type&&)      = delete;
+
+        recursive_generator get_return_object() noexcept {
+            return recursive_generator{ handle_type::from_promise(*this) };
         }
-        std::suspend_always initial_suspend() { return {}; }
-        std::suspend_always final_suspend() noexcept { return {}; }
-        
-        std::suspend_always yield_value(T value) { 
-            current_value = std::move(value);
-            return {}; 
+        std::suspend_always initial_suspend() noexcept { return {}; }
+        std::suspend_always final_suspend()   noexcept { return {}; }
+        void return_void()         noexcept {}
+        void unhandled_exception() noexcept { std::terminate(); }
+
+        // yield a plain value
+        std::suspend_always yield_value(T& value) noexcept {
+            m_value = std::addressof(value);
+            return {};
         }
-        
-        struct nested_awaiter {
-            handle_type h;
-            bool await_ready() noexcept { return false; }
-            void await_suspend(handle_type) noexcept {}
-            void await_resume() noexcept {}
-        };
-        
-        nested_awaiter yield_value(recursive_generator& gen) {
-            if (gen.handle && !gen.handle.done()) {
-                nested.push_back(gen.handle);
-                gen.handle = nullptr;
+        std::suspend_always yield_value(T&& value) noexcept {
+            m_value = std::addressof(value);
+            return {};
+        }
+
+        // yield a nested generator
+        auto yield_value(recursive_generator& gen) noexcept {
+            struct awaitable {
+                promise_type* m_childPromise;
+                bool await_ready()              noexcept { return m_childPromise == nullptr; }
+                void await_suspend(handle_type) noexcept {}
+                void await_resume()             noexcept {}
+            };
+
+            if (gen.m_promise != nullptr) {
+                m_root->m_parentOrLeaf        = gen.m_promise;
+                gen.m_promise->m_root         = m_root;
+                gen.m_promise->m_parentOrLeaf = this;
+                gen.m_promise->resume();        // start child immediately
+
+                if (!gen.m_promise->is_complete()) {
+                    return awaitable{ gen.m_promise };
+                }
+                // child was empty — restore leaf pointer
+                m_root->m_parentOrLeaf = this;
             }
-            return nested_awaiter{nullptr};
+            return awaitable{ nullptr };
         }
-        
-        nested_awaiter yield_value(recursive_generator&& gen) {
-            if (gen.handle && !gen.handle.done()) {
-                nested.push_back(gen.handle);
-                gen.handle = nullptr;
+        auto yield_value(recursive_generator&& gen) noexcept { return yield_value(gen); }
+
+        bool is_complete() noexcept {
+            return handle_type::from_promise(*this).done();
+        }
+
+        // called only on root; returns current leaf's value
+        T& value() noexcept {
+            assert(this == m_root);
+            assert(!is_complete());
+            return *(m_parentOrLeaf->m_value);
+        }
+
+        // called only on root; advance to next value
+        void pull() noexcept {
+            assert(this == m_root);
+            m_parentOrLeaf->resume();
+            while (m_parentOrLeaf != this && m_parentOrLeaf->is_complete()) {
+                m_parentOrLeaf = m_parentOrLeaf->m_parentOrLeaf;
+                m_parentOrLeaf->resume();
             }
-            return nested_awaiter{nullptr};
         }
-        
-        void return_void() {}
-        void unhandled_exception() { std::terminate(); }
+
+    private:
+        void resume() noexcept {
+            handle_type::from_promise(*this).resume();
+        }
     };
-    
-    handle_type handle;
-    
-    explicit recursive_generator(handle_type h) : handle(h) {}
-    recursive_generator() = default;
-    ~recursive_generator() { if (handle) handle.destroy(); }
-    
+
+    // ── generator object ──────────────────────────────────────────────────────
+    promise_type* m_promise;
+
+    recursive_generator() noexcept : m_promise(nullptr) {}
+
+    explicit recursive_generator(handle_type h) noexcept
+        : m_promise(std::addressof(h.promise())) {}
+
+    ~recursive_generator() {
+        if (m_promise)
+            handle_type::from_promise(*m_promise).destroy();
+    }
+
     recursive_generator(const recursive_generator&) = delete;
     recursive_generator& operator=(const recursive_generator&) = delete;
-    
-    recursive_generator(recursive_generator&& other) noexcept 
-        : handle(std::exchange(other.handle, {})) {}
-    
-    recursive_generator& operator=(recursive_generator&& other) noexcept {
-        if (handle) handle.destroy();
-        handle = std::exchange(other.handle, {});
+
+    recursive_generator(recursive_generator&& o) noexcept
+        : m_promise(std::exchange(o.m_promise, nullptr)) {}
+
+    recursive_generator& operator=(recursive_generator&& o) noexcept {
+        if (this != &o) {
+            if (m_promise)
+                handle_type::from_promise(*m_promise).destroy();
+            m_promise = std::exchange(o.m_promise, nullptr);
+        }
         return *this;
     }
-    
+
+    // ── iterator ──────────────────────────────────────────────────────────────
     struct iterator {
-        handle_type current;
-        std::vector<handle_type> pending;
-        
-        iterator() = default;
-        explicit iterator(std::nullptr_t) : current(nullptr) {}
-        
-        void advance() {
-            while (true) {
-                // Process pending nested generators first (LIFO for depth-first)
-                while (!pending.empty()) {
-                    auto nested = pending.back();
-                    pending.pop_back();
-                    
-                    nested.resume();
-                    if (!nested.done()) {
-                        current = nested;
-                        // Add nested's nested generators to pending
-                        for (auto& ng : nested.promise().nested) {
-                            pending.push_back(ng);
-                        }
-                        return;
-                    }
-                    if (nested) nested.destroy();
-                }
-                
-                // Process current generator
-                if (!current) {
-                    return;
-                }
-                
-                current.resume();
-                if (!current.done()) {
-                    // Add current's nested generators to pending
-                    for (auto& ng : current.promise().nested) {
-                        pending.push_back(ng);
-                    }
-                    return;
-                }
-                
-                // Current is done, will process pending or exit
-            }
+        using iterator_category = std::input_iterator_tag;
+        using difference_type   = std::ptrdiff_t;
+        using value_type        = std::remove_reference_t<T>;
+        using reference         = T&;
+        using pointer           = T*;
+
+        promise_type* m_promise;
+
+        iterator() noexcept : m_promise(nullptr) {}
+        explicit iterator(promise_type* p) noexcept : m_promise(p) {}
+
+        bool operator==(const iterator& o) const noexcept { return m_promise == o.m_promise; }
+        bool operator!=(const iterator& o) const noexcept { return !(*this == o); }
+
+        reference operator*()  const noexcept { return m_promise->value(); }
+        pointer   operator->() const noexcept { return std::addressof(**this); }
+
+        iterator& operator++() {
+            assert(m_promise != nullptr);
+            assert(!m_promise->is_complete());
+            m_promise->pull();
+            if (m_promise->is_complete())
+                m_promise = nullptr;
+            return *this;
         }
-        
-        T& operator*() const { 
-            assert(current && !current.done());
-            return current.promise().current_value; 
-        }
-        T* operator->() const { return &**this; }
-        
-        iterator& operator++() { 
-            advance(); 
-            return *this; 
-        }
-        iterator operator++(int) { 
-            auto tmp = *this; 
-            advance(); 
-            return tmp; 
-        }
-        
-        bool operator==(const iterator& other) const { 
-            return current == other.current; 
-        }
-        bool operator!=(const iterator& other) const { return !(*this == other); }
+        void operator++(int) { (void)operator++(); }
     };
-    
-    iterator begin() { 
-        if (handle) {
-            handle.resume();
-            if (!handle.done()) {
-                iterator it;
-                it.current = handle;
-                // Add nested generators to pending
-                for (auto& ng : handle.promise().nested) {
-                    it.pending.push_back(ng);
-                }
-                return it;
-            }
+
+    iterator begin() {
+        if (m_promise != nullptr) {
+            m_promise->pull();
+            if (!m_promise->is_complete())
+                return iterator{ m_promise };
         }
-        return iterator{nullptr};
+        return iterator{ nullptr };
     }
-    iterator end() { return iterator{nullptr}; }
+
+    iterator end() noexcept { return iterator{ nullptr }; }
 };

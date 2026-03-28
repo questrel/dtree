@@ -291,6 +291,16 @@ public:
   template<typename S=lex::string>
     row(const std::vector<S> &v): base_t(ss(v)){}
 
+  bool operator<(const row &r) const {
+    return std::lexicographical_compare(begin(), end(), r.begin(), r.end(),
+      [](const lex::scalar &a, const lex::scalar &b){ return a < b; });
+  }
+  bool operator==(const row &r) const {
+    if (size() != r.size()) return false;
+    for (size_t i = 0; i < size(); ++i)
+      if (!((*this)[i] == r[i])) return false;
+    return true;
+  }
   auto operator+(const row &r) const {
     auto ret = *this;
     for(auto x : r){
@@ -2978,7 +2988,7 @@ freed by thread T0 here:
 	 //	 return( search_vertex(*B.l,{},B.predicate.expr()).begin() );
        }
 #endif
-       iterator(const lval *b,const lattice &l,const path &p,const qtl::optexpr<qtl::basic_interval<lex::scalar, void>, qtl::intvec<>> &e):B(b),base_coro(std::in_place,search_vertex(l,p,e)),base_it(base_coro::value().begin()){
+       iterator(const lval *b,const lattice &l,const path &p,const qtl::optexpr<qtl::basic_interval<lex::scalar, void>, qtl::intvec<>> &e):B(b),base_coro(std::in_place,dedup_search(l,p,e)),base_it(base_coro::value().begin()){
 	 TRACE( std::cerr << 
 		__PRETTY_FUNCTION__ << "(" << b << "," /* << p */ << ")" <<  "\n"; )
 	   TRACE( std::cerr << "m_promise=" << base_coro::value().m_promise << "\n"; )
@@ -3033,7 +3043,7 @@ freed by thread T0 here:
      }
      iterator begin(){
 	 TRACE( std::cerr << __PRETTY_FUNCTION__ << ":" << __LINE__ << "\n"; )
-	   return iterator(this,*(this->l),{},this->predicate.expr()).begin();
+	   return iterator(this,*(this->l),{},this->predicate.expr());
      }
      iterator end(){
 	 TRACE( std::cerr << __PRETTY_FUNCTION__ << ":" << __LINE__ << "\n"; )
@@ -3179,14 +3189,35 @@ friend std::ostream& operator<<(std::ostream& os, const std::pair<T0,T1>& obj){
       TRACE(std::cerr <<  qtl::type_name<decltype(v->divs())>() << "\n"; )
 	auto d=choose(v->divs());
 	for( auto s:v->divs()[d] ){
-	  TRACE(std::cerr <<  qtl::type_name<decltype(s)>() << "\n"; ) 
+	  TRACE(std::cerr <<  qtl::type_name<decltype(s)>() << "\n"; )
           TRACE(std::cerr << s << "\n"; )
 	  TRACE(std::cerr << p+segment(d,s) << "\n"; )
-	    co_yield search_vertex(l, p+segment(d,s),e);
+	  co_yield search_vertex(l, p+segment(d,s),e);
 	}
     }
+#if 0
+    // Flattened form (avoids nested co_yield) — kept for reference.
+    // Required workaround when std20_recursive_generator only supported flat
+    // (value-only) generators. Now that the generator uses the correct
+    // m_root/m_parentOrLeaf chain (see qtl/std20_recursive_generator.hpp),
+    // the idiomatic co_yield nested_gen form above works correctly.
+    if( v->is_leaf() ){
+      for( auto r : search_leaf(v->log(),e) ) co_yield r;
+    }else{
+      auto d=choose(v->divs());
+      for( auto s:v->divs()[d] ){
+        for( auto r : search_vertex(l, p+segment(d,s),e) ) co_yield r;
+      }
+    }
+#endif
     TRACE( std::cerr << __FUNCTION__ << " co_return;\n"; )
     co_return;
+  }
+  static recursive_generator<qtl::row> dedup_search(const lattice &l, const path &p, const qtl::optexpr<qtl::basic_interval<lex::scalar, void>, qtl::intvec<>> &e){
+    std::set<qtl::row> seen;
+    for( auto r : search_vertex(l,p,e) ){
+      if( seen.insert(r).second ) co_yield r;
+    }
   }
   static recursive_generator<qtl::row> search_leaf(const rows &r, const qtl::optexpr<qtl::basic_interval<lex::scalar, void>, qtl::intvec<>> &e){
     TRACE(std::cerr << __PRETTY_FUNCTION__ << "(" << r << "," /* << e->stringify() */ << ") " << __LINE__ << '\n'; )
@@ -3436,10 +3467,6 @@ namespace qtl{
 	  NOTRACE( std::cerr << "*s=" << *s << '\n'; )
 	    /**/assert( srows.size()==mrows.size() );
   	  srows.insert(*s); mrows.insert(*m);
-	  NOTRACE( std::cerr << mrows.size() << " " << srows.size() << '\n'; )
-	  if( srows.size()!=mrows.size() ){
-	    WARN( std::cerr << srows << " != " << mrows << "\n"; )
-          }
 	  assert( srows.size()==mrows.size() );
           ++s; ++m; 
  	  NOTRACE( std::cerr << (m.it()!=m.end()) << "," << (s.it()!=s.end()) << "," << std::distance(m.it(),m.end()) << '\n'; ) 
@@ -3489,12 +3516,12 @@ namespace qtl{
             }
             if( !(m!=m.end()) ){
 	    TRACE( std::cerr << __LINE__ << " " <<  s->m_promise << "\n"; )
-                    if( s!=s.end() ){ 
+                    if( s!=s.end() ){
 	    TRACE( std::cerr << __LINE__ << " " <<  s->m_promise << "\n"; )
 		      TRACE( std::cerr << "m==m.end() but *s=" << *s << "\n"; )
    		      TRACE( std::cerr << "mrows=" << mrows << "\n"; )
    		      TRACE( std::cerr << "srows=" << srows << "\n"; )
-                       assert(!(s!=s.end())); 
+                       assert(!(s!=s.end()));
                       } 
                mrows.clear();
 	    }else if( !(s!=s.end()) ){
