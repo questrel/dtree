@@ -360,6 +360,64 @@ for (auto r : w) { /* r is a qtl::row */ }
 // (replaces the former cppcoro dependency).
 ```
 
+##### lattice — internal tree structure
+
+The `lattice` class is `std::map<path, std::shared_ptr<vertex>>`.
+Every entry maps a coordinate path to a tree vertex.
+
+**Vertex types** (`vertex = std::variant<rows, std::vector<splits>>`):
+- **Leaf** (`index()==0`, `is_leaf()==true`): holds `rows` — a `std::vector<row>` of actual records.
+  `v->log()` returns the rows stored here. Multiple rows may share a leaf.
+- **Internal** (`index()==1`, `is_leaf()==false`): holds `divs()` — a `std::vector<splits>`, one entry per dimension.
+  Contains no data directly; drives recursive traversal into children.
+
+**`path` and `segment`** (`path = std::vector<interval>`):
+- A path is a list of intervals, one per dimension, that jointly describe a region of the key space.
+- `p + segment(d, s)` ANDs interval `s` into dimension `d`, narrowing the region:
+  ```cpp
+  path[d] = path[d] && s.interval;  // intersection — never widens
+  ```
+- Paths only become more constrained as traversal descends.
+
+**`divs()[d]` — splits in dimension d** (`splits = (bounds_interval, std::set<boundary_t>)`):
+- `splits::iterator` yields consecutive sub-intervals: `[bounds.l, b0)`, `[b0, b1)`, …, `[bN, bounds.r)`.
+- Sub-intervals are **guaranteed non-overlapping** by construction (boundaries partition the space).
+- Coverage is anchored to `bounds()` so no gap is left inside the declared range.
+- `choose(v->divs())` selects which dimension to traverse — currently always returns `0` (dimension 0 only).
+
+**Insertion** (`lval::operator=(const row&)`):
+- `lattice::iterator` descends the tree following prefix-match rules until it reaches a leaf.
+- The row suffix is appended via `push_back` — **no deduplication on insert**.
+- If the same row is inserted twice, it appears twice in `log()`.
+
+**`save()` / `get()`** (round-trip serialisation):
+- `save()` serialises the lattice to a binary file; `get()` deserialises it.
+- No content deduplication occurs during either pass.
+- After a round-trip, duplicate entries in `log()` are preserved as-is.
+
+**Invariants that hold:**
+1. Leaf and internal are mutually exclusive — `variant` enforces this.
+2. `log()` is only valid on leaves; `divs()` only on internal nodes.
+3. Sub-intervals in each `divs()[d]` are non-overlapping.
+4. Each insertion reaches exactly one leaf.
+5. Paths narrow monotonically during traversal (AND semantics).
+
+**Known violated invariant — row uniqueness in search:**
+- `search_vertex` can yield the same row more than once, violating the expected set semantics of a query result.
+- Root causes are any of: (a) duplicate rows in a single leaf's `log()` (from repeated insertion);
+  (b) the same leaf reachable via multiple paths when the lattice map has overlapping entries;
+  (c) save/get round-trip artefacts.
+- `dedup_search` wraps `search_vertex` with a `std::set<row>` filter at the `store::lval::iterator`
+  level as a safe containment fix; the deeper structural cause remains to be diagnosed.
+
+**`test::lval` — cross-check harness:**
+- Simultaneously advances `store::lval::iterator` (s) and `model::lval::iterator` (m, a filtered
+  in-memory vector scan).
+- Each `operator++` inserts `*s` into `srows` and `*m` into `mrows` (both `std::set<row>`).
+- Asserts `srows.size()==mrows.size()` before and after each insert.
+- Because sets deduplicate, a duplicate yield from either iterator stalls its set's size while
+  the other's advances — immediately detecting divergence.
+
 ### qtl/sql.h
 ```c++
 // Toy SQL parser — turns SQL queries into qtl::store[] queries via boost::spirit::X3

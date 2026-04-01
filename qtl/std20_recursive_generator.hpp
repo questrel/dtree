@@ -1,4 +1,7 @@
 #pragma once
+// Active implementation of recursive_generator<T> for C++20 builds.
+// Replaces the cppcoro C++17/experimental path (archived as cppcoro.ARCHIVE/).
+// Include via qtl/generator.h, not directly.
 #include <coroutine>
 #include <cassert>
 

@@ -1,0 +1,158 @@
+#pragma once
+#include <coroutine>
+#include <vector>
+#include <cassert>
+
+// C++20 std::generator replacement for cppcoro::recursive_generator
+// Supports: co_yield value; co_yield nested_generator;
+
+template<typename T>
+struct recursive_generator {
+    struct promise_type;
+    using handle_type = std::coroutine_handle<promise_type>;
+    
+    struct promise_type {
+        T current_value;
+        std::vector<handle_type> nested;
+        
+        recursive_generator get_return_object() { 
+            return recursive_generator{handle_type::from_promise(*this)}; 
+        }
+        std::suspend_always initial_suspend() { return {}; }
+        std::suspend_always final_suspend() noexcept { return {}; }
+        
+        std::suspend_always yield_value(T value) { 
+            current_value = std::move(value);
+            return {}; 
+        }
+        
+        struct nested_awaiter {
+            handle_type h;
+            bool await_ready() noexcept { return false; }
+            void await_suspend(handle_type) noexcept {}
+            void await_resume() noexcept {}
+        };
+        
+        nested_awaiter yield_value(recursive_generator& gen) {
+            if (gen.handle && !gen.handle.done()) {
+                nested.push_back(gen.handle);
+                gen.handle = nullptr;
+            }
+            return nested_awaiter{nullptr};
+        }
+        
+        nested_awaiter yield_value(recursive_generator&& gen) {
+            if (gen.handle && !gen.handle.done()) {
+                nested.push_back(gen.handle);
+                gen.handle = nullptr;
+            }
+            return nested_awaiter{nullptr};
+        }
+        
+        void return_void() {}
+        void unhandled_exception() { std::terminate(); }
+    };
+    
+    handle_type handle;
+    
+    explicit recursive_generator(handle_type h) : handle(h) {}
+    recursive_generator() = default;
+    ~recursive_generator() { if (handle) handle.destroy(); }
+    
+    recursive_generator(const recursive_generator&) = delete;
+    recursive_generator& operator=(const recursive_generator&) = delete;
+    
+    recursive_generator(recursive_generator&& other) noexcept 
+        : handle(std::exchange(other.handle, {})) {}
+    
+    recursive_generator& operator=(recursive_generator&& other) noexcept {
+        if (handle) handle.destroy();
+        handle = std::exchange(other.handle, {});
+        return *this;
+    }
+    
+    struct iterator {
+        handle_type current;
+        std::vector<handle_type> pending;
+        
+        iterator() = default;
+        explicit iterator(std::nullptr_t) : current(nullptr) {}
+        
+        void advance() {
+            while (true) {
+                // Process pending nested generators first (LIFO for depth-first)
+                while (!pending.empty()) {
+                    auto nested = pending.back();
+                    pending.pop_back();
+                    
+                    nested.resume();
+                    if (!nested.done()) {
+                        current = nested;
+                        // Add nested's nested generators to pending
+                        for (auto& ng : nested.promise().nested) {
+                            pending.push_back(ng);
+                        }
+                        return;
+                    }
+                    if (nested) nested.destroy();
+                }
+                
+                // Process current generator
+                if (!current) {
+                    return;
+                }
+                
+                current.resume();
+                if (!current.done()) {
+                    // Add current's nested generators to pending
+                    for (auto& ng : current.promise().nested) {
+                        pending.push_back(ng);
+                    }
+                    return;
+                }
+
+                // Current is done — mark end-of-iteration and stop
+                current = {};
+                return;
+            }
+        }
+        
+        T& operator*() const { 
+            assert(current && !current.done());
+            return current.promise().current_value; 
+        }
+        T* operator->() const { return &**this; }
+        
+        iterator& operator++() { 
+            advance(); 
+            return *this; 
+        }
+        iterator operator++(int) { 
+            auto tmp = *this; 
+            advance(); 
+            return tmp; 
+        }
+        
+        bool operator==(const iterator& other) const { 
+            return current == other.current; 
+        }
+        bool operator!=(const iterator& other) const { return !(*this == other); }
+    };
+    
+    iterator begin() { 
+        if (handle) {
+            handle.resume();
+            if (!handle.done()) {
+                iterator it;
+                it.current = handle;
+                // Add nested generators to pending
+                for (auto& ng : handle.promise().nested) {
+                    it.pending.push_back(ng);
+                }
+                return it;
+            }
+        }
+        return iterator{nullptr};
+    }
+    iterator end() { return iterator{nullptr}; }
+};

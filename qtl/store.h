@@ -20,7 +20,7 @@
 // Coroutines for C++20
 #include <coroutine>
 // using std::experimental::suspend_always=std::suspend_always;
-#include "std20_recursive_generator.hpp"
+#include "generator.h"
 #include <sys/types.h>
 #include <unistd.h>
 #if 0
@@ -803,30 +803,16 @@ template<typename R>
   	NOTRACE( std::cerr << *this << ": " << p  << '\n'; )
 	NOTRACE( std::cerr << "prefix()= " << prefix()  << '\n'; )
 
-#define TEMP
-#ifdef  TEMP
+	// local copy of prefix() required: prefix() returns a temporary, so taking
+	// .begin() on it directly gives a dangling iterator.
+	// (fuzz crash: id:000001,sig:11,src:000069,op:flip8,pos:965 — heap-use-after-free)
 	auto pref=prefix();
         auto i   = pref.begin();
 	if( !prefix().empty() ){ NOTRACE( std::cerr << "*prefix().begin()=" << *(prefix().begin()) << '\n'; ) }
 	if( !pref.empty() ){ NOTRACE( std::cerr << "*pref.begin()=" << *i << '\n'; ) }
-#else
-	// chris/chris-desktop/didb/fuzz/store.out/crashes/id:000001,sig:11,src:000069,op:flip8,pos:965
-	//ERROR: AddressSanitizer: heap-use-after-free on address 
-	//  freed by thread T0 here:
-        // #8 0x100396ba0 in qtl::store::path::requirements::admits(qtl::row const&) const /Users/dmi/pl/./qtl/store.h:720:9
-	// previously allocated by thread T0 here:
-	// #10 0x10039699a in qtl::store::path::requirements::admits(qtl::row const&) const /Users/dmi/pl/./qtl/store.h:720:9
-	auto i=prefix().begin();
-#endif
         auto r   = (p).begin();
         if( !(p).empty() ){ NOTRACE( std::cerr << "*row.begin()=" << *r << '\n'; ) }
-        while( i !=
-#ifdef TEMP
-                  pref.end() 
-#else
-                  prefix().end()
-#endif
-//#undef TEMP
+        while( i != pref.end()
            && r != p.end()
         ){
 	  NOTRACE( std::cerr << *i << "?=" << *r << '\n'; )
@@ -989,6 +975,9 @@ template<typename R>
     return l;
   }
 
+  // ^= (consensus): keep l if l and r agree exactly; clear l to empty if they differ.
+  // Intended for confluence tracking: a path in the confluence map is retained only
+  // if every traversal that reaches it finds the same splits structure.
   friend splits& operator^=(splits &l, const splits &r){
     if( l.bounds().l()!=r.bounds().l() || l.bounds().u()!= r.bounds().u() ){ NOTRACE( std::cerr << __PRETTY_FUNCTION__ << "(" << l << " != " << r << ")\n"; ) return l=splits(); }
     if( l.div() != r.div() ){ return l=splits(); }
@@ -1287,6 +1276,10 @@ template<typename R>
       }
   }; // end class vertex_ptr
 
+  // confluence: intended to track DAG-shared subtrees — paths that converge on the
+  // same splits structure (consensus via ^=: keep if both sides agree, clear if they
+  // differ). Currently only read in debug/TRACE output; never influences control flow.
+  // The adaptive-splitting scheme that would use it is not yet complete.
   static inline std::map<path,std::optional<std::vector<splits>>,path::lexicographical_less> confluence;
 
 #define BASE_T std::pair<path, std::shared_ptr<vertex>>
@@ -2089,6 +2082,13 @@ template<typename R>
 #undef BASE_T
     public:
       using base_t::base_t;
+      // Adaptive trie restructuring (database cracking):
+      // pass/fail accumulate O(log²(n)) samples of rows seen by this query.
+      // On each leaf exhaustion, split() inspects these samples to find a
+      // boundary that separates pass from fail rows, then calls split(ki,i,b)
+      // to add a new trie node — improving future queries on the same data.
+      // The split optimisation is not yet complete; split() currently only
+      // collects candidates without committing (see choosesplit / partcount).
       mutable sample<row>pass;
       mutable sample<row> fail;
       //qtl::tree::optree::hints mutable hints;
@@ -2656,125 +2656,7 @@ template<typename R>
    NOTRACE( operator<<(std::cerr << "confluence:",qtl::store::confluence) << "\n"; ); 
   }
 
-#if 0
-   class lval {
-     //      std::vector<lex::string>prefix;
-     //      path prefix;
-     //      std::shared_ptr<class trie> t;
-   public:
-     std::shared_ptr<class lattice> l;
-     path::requirements  predicate;
-     //lval(const std::vector<std::string> &v={}):prefix(v){}
-     //     lval(const std::vector<lex::string> &v={},const expr &e={}):prefix(v),predicate(e),t(tp){
-     auto prefix(){
-       return predicate.prefix();
-     }
-   lval(const row &p,  const optexpr &e):lval(path::requirements(p,e)){}
-   lval(const path::requirements &r) : predicate(r), l(rp){
-       NOTRACE(std::cerr << __PRETTY_FUNCTION__ << "(" << &tr << " : " << t.use_count() << ":" << t.get() << ")\n";)
-       NOTRACE(std::cerr << __PRETTY_FUNCTION__ << "(";
-	       for(auto x
-		   : v){ std::cerr << x << ", "; } std::cerr
-	       << ")\n";)
-      /**/NOTRACE(if(e.has_value()){ std::cerr << __PRETTY_FUNCTION__ << '(' << e.value().stringify() << ")\n"; })
-     }
-   lval(const expr &e)
-       : predicate((std::vector<lex::scalar>){}, e)
-       , l(rp){
-       //t=&trie;
-     }
-     operator std::vector<std::shared_ptr<class lattice>>() const {
-       std::vector<std::shared_ptr<class lattice>> ret;
-       for(auto x : *l){
-	 ret.push_back(l);
-       }
-       return ret;
-     }
-     auto operator[](const expr &e){
-      /**/NOTRACE(std::cerr << __PRETTY_FUNCTION__ << '(' << e.stringify() << ')' << '\n';)
-       auto ret = *this;
-      /**/NOTRACE(
-	   if(ret.predicate.expr().has_value()){
-	     std::cerr << ret.predicate.expr()->stringify() << ' := ' << '\n';
-	   })
-       ret.predicate.expr() = e;
-      /**/NOTRACE(std::cerr << ret.predicate.expr().has_value() << ": " << ret.predicate.expr()->stringify() << '\n';)
-       return ret;
-     }
-     auto operator[](const row &v){
-       auto ret               = *this;
-       ret.predicate.prefix() = ret.predicate.prefix() + v;
-       return ret;
-     }
-     void operator=(const row  &v){
-      /**/NOTRACE(std::cerr << __PRETTY_FUNCTION__ << "(";
-	     std::cerr << predicate << ",";
-	     std::cerr << v;
-	     std::cerr << ")\n";
-      )
-       NOTRACE(std::cerr << "l=" << l << '\n';)
-       NOTRACE(std::cerr << "*l=" << *l << '\n';)
 
-      if( v.size() ){     
-	auto ll=(*this)[v];
-
-	NOTRACE( std::cerr << "ll.predicate=" << ll.predicate << '\n'; );
-	NOTRACE( std::cerr << "ll.l=" << ll.l << '\n'; );
-       NOTRACE(std::cerr << "l=" << l << '\n';)
-       NOTRACE(std::cerr << "*l=" << *l << '\n';)
-	NOTRACE(std::cerr << "l->size()=" << l->size() << '\n';)
-	//	return ll=row();
-	ll=row();
-	NOTRACE( std::cerr << "ll.l=" << ll.l << '\n'; );
-       NOTRACE(std::cerr << "l=" << l << '\n';)
-       NOTRACE(std::cerr << "*l=" << *l << '\n';)
-	NOTRACE(std::cerr << "l->size()=" << l->size() << '\n';)
-	return;
-      }
-      auto p = lattice::iterator(predicate,true);
-       NOTRACE(std::cerr << "root:" << root << "\n";);
-       NOTRACE(std::cerr << "v " << v << " p.path() " << p.path() << "\n";);
-       NOTRACE(std::cerr << "*p.v()" << *p.v() << "\n";);
-       NOTRACE(std::cerr << "v%p.path() " << (prefix() + v) % p.path() << "\n";);
-       assert(p.v()->is_leaf());
-       NOTRACE(std::cerr << "std::get<0>(*p.v()):" << std::get<0>(*p.v()) << "\n";);
-       std::get<0>(*p.v()).push_back((prefix() + v) % p.path());
-       NOTRACE(std::cerr << "std::get<0>(*p.v()):" << std::get<0>(*p.v()) << "\n";);
-       NOTRACE(std::cerr << "*p.v()" << *p.v() << "\n";);
-       NOTRACE(std::cerr << "root:" << root << "\n";);
-     }
-     void operator=(const std::nullptr_t &n){
-      auto p = lattice::iterator(predicate,true);
-      NOTRACE(std::cerr << __PRETTY_FUNCTION__ << '\n'; )
-       assert(p.v()->is_leaf());
-      NOTRACE( std::cerr << *p.v() << '\n'; )
-      auto d=(prefix()) % p.path();
-      NOTRACE( std::cerr <<  prefix() << " % " << p.path()<< "=" << d << "\n"; );
-      auto v= std::get<0>(*p.v());
-      v.erase(std::remove(v.begin(),v.end(),d),v.end());
-      NOTRACE( std::cerr << *p.v() << '\n'; )
-      std::get<0>(*p.v())=v;
-      NOTRACE( std::cerr << *p.v() << '\n'; )
-     }
- #define BASE_T lattice::iterator
-     class iterator : public BASE_T {
-       using base_t = BASE_T;
- #undef BASE_T
-     public:
-       using base_t::base_t;
-     }; // end class lval::iterator
-     iterator begin(){
-      /**/TRACE(std::cerr << __PRETTY_FUNCTION__ << '(' << predicate << ')' << '\n');
-       NOTRACE(std::cerr << iterator(predicate).stack().predicate << '\n';)
-       NOTRACE(std::cerr << l << '\n';)
-       NOTRACE(std::cerr << *l << '\n';)
-       return iterator(predicate);
-     }
-     auto end(){
-       return nullptr;
-     }
-   }; /* end class lval */
-#else
    static  path trace_path;
    static  row trace_row;
   #define BASE_T recursive_generator<qtl::row>
@@ -3050,7 +2932,6 @@ freed by thread T0 here:
 	   return iterator();
      }
    }; /* end class store::lval */
-#endif
 public:
    /* index by expression or vector */
    lval operator[](const expr &e){
@@ -3234,70 +3115,6 @@ friend std::ostream& operator<<(std::ostream& os, const std::pair<T0,T1>& obj){
     TRACE( std::cerr << __FUNCTION__ << " co_return;\n"; )
       co_return;
   }
-
-#define BASE_T recursive_generator<qtl::row>
-  class co_lval:public BASE_T {
-     using base_t = BASE_T;
-#undef BASE_T
-  public:
-     std::shared_ptr<class lattice> l;
-     path::requirements  predicate;
-     std::vector<base_t> filters;
-    /*static constexpr*/ auto co_search_leaf(const rows &r)-> recursive_generator<qtl::row>{
-      TRACE(std::cerr << __PRETTY_FUNCTION__ << '\n';)
-      for( auto i:r ){
-	if( (path(),i).satisfies(this->predicate) == kleen::T ){
-	  co_yield i;
-	}else{
-	  // TRACE(std::cerr << "fail(" << i << ")" << '\n';)
-        }
-      }
-    TRACE( std::cerr << __FUNCTION__ << " co_return;\n"; )
-      co_return;
-    };
-    /*static*/ auto co_search_vertex(const path &p)->recursive_generator<qtl::row>{
-      TRACE(std::cerr << __PRETTY_FUNCTION__ << '\n';)
-    NOTRACE(std::cerr << l->m << '\n';)
-    NOTRACE(std::cerr << *l->m << '\n';)
-
-      auto v=(*(this->l->m))[p];
-
-    TRACE(std::cerr << v << '\n';)
-    NOTRACE(std::cerr << *v << '\n';)
-    NOTRACE(std::cerr << !v << '\n';)
-      //    if( !v ){ co_return; };
-
-    if( v->is_leaf() ){
-      co_yield co_search_leaf(v->log());
-    }else{
-      TRACE(std::cerr <<  qtl::type_name<decltype(*v)>() << "\n"; )
-      TRACE(std::cerr <<  qtl::type_name<decltype(v->divs())>() << "\n"; )
-	auto d=choose(v->divs());
-	for( auto s:v->divs()[d] ){
-	  TRACE(std::cerr <<  qtl::type_name<decltype(s)>() << "\n"; ) 
-          TRACE(std::cerr << s << "\n"; )
-	  TRACE(std::cerr << p+segment(d,s) << "\n"; )
-	    co_yield co_search_vertex(p+segment(d,s));
-	}
-    }
-    TRACE( std::cerr << __FUNCTION__ << " co_return;\n"; )
-    co_return;
-  };
-  static inline std::shared_ptr<class lattice> rp = std::make_shared<class lattice>(root);
-   co_lval(const row &p,  const optexpr &e):co_lval(path::requirements(p,e)){}
-   co_lval(const path::requirements &r) : predicate(r), l(rp){}
-   co_lval(const expr &e)
-       : predicate((std::vector<lex::scalar>){}, e)
-       , l(rp){
-     }
-
-    class iterator:public base_t::iterator{
-       using base_iterator=base_t::iterator;
-       using base_iterator::base_iterator;
-    };
-    auto begin(){ return co_search_vertex({}).begin(); }
-    auto end(){ return co_search_vertex({}).end(); }
-  }; // end class co_lval
 }; // end class store
     //using expr=store::expr;
 // using optexpr=store::optexpr;

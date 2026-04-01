@@ -175,20 +175,24 @@ be wrapped in `TRACE()` or removed.
 
 ---
 
-## 7. The lattice / trie structure
+## 7. The lattice — a DAG, not a trie
 
-The store indexes data in a multi-dimensional trie called a `lattice`.
+The name `lattice` is precise: the index is a directed acyclic graph (DAG), not a
+tree. Multiple paths through the lattice can converge on the same `vertex` object.
+This is intentional and is the mechanism by which the index optimises for query
+patterns — common substructure is shared across paths, amortising traversal cost.
+The `shared_ptr<vertex>` throughout the implementation is what enables this sharing.
 
 Each **path** is a vector of interval coordinates, one per dimension. A path identifies
 a position in the multi-dimensional space. For a 3-column table, a path might be
 `[["A","B"), ["1","2"), ["10","20")]` — a box in 3D column-value space.
 
-The trie has two node types:
+The lattice has two node types:
 - **Leaf** (`rows`): a flat list of rows whose coordinates fall in this path's box
 - **Internal node** (`splits`): a set of sub-interval divisions for one dimension,
   pointing to child vertices
 
-Querying traverses the trie top-down, pruning branches that cannot satisfy the
+Querying traverses the lattice top-down, pruning branches that cannot satisfy the
 predicate (`path::requirements::admits(path)` does interval-based pruning before
 fetching actual rows).
 
@@ -198,6 +202,14 @@ fetching actual rows).
 
 A path is pruned if its coordinate box is inconsistent with either the prefix
 or the expression (interval arithmetic determines this without touching rows).
+
+**Why `dedup_search` exists**: because the same leaf vertex is reachable via multiple
+paths, traversal can yield the same row more than once. Deduplication is a correctness
+requirement, not a performance optimisation — without it, queries return duplicates.
+
+**Planned**: dynamic allocation of shared nodes based on observed query patterns (see
+section 14c). The current implementation has the DAG structure but does not yet
+adaptively reshape it.
 
 ---
 
@@ -378,38 +390,195 @@ spaceship operator, which would synthesize comparisons via `double`.
 
 ---
 
-## 15. Two parallel `basic_boundary` types
+## 14a. String and tuple encoding — null-safe, self-terminating, hierarchical
 
-`lex::basic_boundary` (interval.h ~line 120) and `qtl::basic_boundary` (interval.h
-~line 148) represent the same mathematical concept — a boundary with a value and an
-open/closed margin — but in different forms:
+The string encoding is designed to satisfy three constraints simultaneously:
 
-- `lex::basic_boundary` inherits from `lex::string`: the boundary is encoded as a
-  string, suitable for persistence and lexicographic comparison.
-- `qtl::basic_boundary` inherits from `std::pair<S,L>`: an in-memory pair for
-  computation.
+1. **Null-safe**: encoded strings may contain null bytes, so a single `\0` cannot serve
+   as a terminator.
+2. **Self-terminating**: the end of a string can be detected without a separate length
+   field — the encoding itself signals where the string ends.
+3. **Hierarchically unambiguous**: composite tuples (and nested tuples) use different
+   levels of terminators, so a decoder can unambiguously distinguish end-of-inner-string,
+   end-of-tuple, end-of-outer-tuple, etc., without a schema.
 
-There is a conversion constructor in one direction. A `#if 0` block (~line 134) shows
-a disabled conversion that was once more tightly coupled. The design evolved to
-decouple serialisation (`lex::`) from computation (`qtl::`): you deserialise via
-`lex::`, compute via `qtl::`.
+The solution is multi-byte terminators with different escape levels. A terminator for a
+string within a tuple is distinguishable from a terminator for the tuple itself, which
+is distinguishable from a terminator for an outer tuple containing that tuple. This is
+why the encoding is more complex than a simple null-terminated or length-prefixed
+scheme: those approaches fail when the data can contain nulls and when keys are
+composite or nested.
+
+A reader who sees unusual multi-byte sequences at the boundaries of string values —
+this is the hierarchical terminator scheme, not an artifact or bug.
 
 ---
 
-## 16. `cmp_rule` in `expr.h` — query optimisation disguised as parsing
+## 14b. `memcmp`-ordered encoding with corpus-optimised numeric representation
+
+The internal binary encoding of both `lex::string` and `lex::number` is designed so
+that `memcmp` gives the correct total ordering for all value types. This is a
+fundamental constraint imposed by the trie: trie path comparison is essentially a
+byte-level comparison, so the encoding must be order-preserving across the full value
+domain.
+
+For numeric values, the encoding goes further: the mapping is chosen so that values
+representable in small C++ numeric types (int, short, float, etc.) tend to have short
+byte representations. This is a corpus-level optimisation — the goal is to minimise
+average representation length across typical numeric data, reducing storage and
+comparison overhead. It is not merely about type correctness; it reflects an assumption
+about what values appear frequently in practice.
+
+A reader who sees the numeric encoding and wonders "why this particular mapping?" — the
+answer is: order-preserving for `memcmp` correctness, and compact for small common
+values.
+
+---
+
+## 14c. Dynamic trie rebalancing based on query workload — envisioned, not implemented
+
+The trie currently partitions on dimensions in a fixed order (defaulting to leftmost).
+A harder optimisation would have nodes dynamically restructure themselves as information
+about the query workload accumulates.
+
+**The idea**: track, per node, which dimensions appear most frequently in query
+predicates. If queries consistently filter on dimension 3 but the node currently splits
+on dimension 1, the node could reorganize to split on dimension 3 instead — placing the
+high-selectivity predicate earlier in the traversal and allowing more aggressive pruning.
+
+**Why it is hard**:
+- Requires per-node workload statistics (query counters per dimension) accumulating
+  over time, not just a snapshot.
+- The rebalancing operation must restructure the node without corrupting the data or
+  invalidating concurrent queries.
+- Policy decisions: what threshold triggers rebalancing? How to avoid thrashing if the
+  query mix changes?
+- The benefit depends on the query distribution being stable enough to predict — a
+  random or adversarial workload could make rebalancing counterproductive.
+
+**Related work**: conceptually similar to splay trees (self-adjusting to access
+patterns) and adaptive radix trees (ART), but applied to a multi-dimensional trie
+rather than a single-key index.
+
+Not implemented. The aggregate caching optimisation (below) is a prerequisite or at
+least a natural companion — nodes that cache aggregates also need to track which queries
+cover them, which overlaps with the workload-tracking needed for rebalancing.
+
+---
+
+## 14d. Aggregate caching in trie nodes — envisioned, not implemented
+
+SQL aggregate functions (SUM, COUNT, AVG, VARIANCE) are not yet implemented. When
+they are, a trie-level caching optimisation is possible:
+
+**The insight**: when a query's range fully covers a trie node (everything below the
+node satisfies the predicate), aggregate values for the entire subtree can be computed
+once and stored in the node rather than traversing every leaf on each query. This turns
+an O(n) subtree scan into an O(1) cache read for fully-covered nodes.
+
+**Incremental maintenance**: once a node is known to participate in aggregate queries,
+its cached values need to be updated (or invalidated) on each insert or delete within
+that subtree. The challenge is doing this without numerical drift.
+
+**Numerical stability**: naive incremental updates to mean and variance accumulate
+floating-point error. The numerically stable approaches are:
+- **Welford's online algorithm** (1962): computes running mean and variance in one
+  pass with good numerical properties. Suitable for incremental inserts.
+- **Chan et al. parallel algorithm** (1979): combines aggregate statistics from two
+  groups — needed when merging subtree caches after a trie split, or when computing
+  node aggregates from child node caches.
+- **Decremental updates** (removing a value from a running aggregate): harder than
+  incremental, and less well-studied for numerical stability. May require recomputation
+  from children rather than direct subtraction.
+
+The specific references were researched but not recorded. Welford and Chan are the
+most likely starting points.
+
+---
+
+## 14d. Prefix-compressed string storage — envisioned, not implemented
+
+Within a trie node, every value stored there shares the node's path prefix by
+construction — the trie structure guarantees it. Storing that prefix redundantly in
+each value wastes space and comparison time.
+
+A `prefixed_string` class was envisioned to make this transparent: it would store only
+the suffix (the part beyond the shared prefix) plus a lightweight reference to the
+prefix, reconstructing the full value on demand. The calling code would see a normal
+string interface; the compression would be invisible.
+
+The same mechanism extends naturally to intervals: when an interval's lower and upper
+bounds share a common prefix (which they often do within a node, since they bound a
+narrow range), the prefix would be stored once and only the diverging suffixes kept for
+each endpoint.
+
+This optimisation has not been implemented. The encoding design (`memcmp`-ordered,
+self-terminating, hierarchically terminated) was chosen partly with this in mind —
+prefix sharing is well-defined because the encoding is order-preserving and
+byte-comparable.
+
+---
+
+## 15. Intervals on the projective real line with ±ε boundaries
+
+Two design choices combine to make interval arithmetic uniform, with no special cases:
+
+**1. Projective real line — ∞ is a single point, intervals wrap**
+
+Intervals live on the projective real line RP¹, where +∞ and -∞ are the same point.
+This means intervals can wrap around ∞. The key consequence: division by an interval
+containing 0 always produces a single valid interval rather than two disjoint pieces.
+
+On the extended reals, `1 / [-1, 1]` would give `(-∞, -1] ∪ [1, +∞)` — a split
+result that requires special handling. On RP¹, this is a single wrapped interval
+`[1, -1]` (reading "from 1, going through ∞, to -1"). Division is always defined,
+always returns one interval, no exceptions, no split-result logic.
+
+**2. ±ε boundary displacements — no open/closed flags**
+
+Rather than tracking open vs closed endpoints with boolean flags and writing case
+logic for every combination (`[a,b]`, `(a,b)`, `[a,b)`, `(a,b]`), boundaries encode
+the open/closed distinction as an infinitesimal ±ε displacement from the value.
+A closed lower bound `a` (meaning `x >= a`) is represented as `a - ε`; an open lower
+bound (meaning `x > a`) is `a + ε`. Similarly for upper bounds.
+
+The result: all interval comparisons reduce to a single strict `<` ordering on a
+linearly ordered field. `[a,b]` is `a-ε < x < b+ε`, `(a,b)` is `a+ε < x < b-ε`,
+and mixed cases fall out automatically.
+
+`lex::basic_boundary` (interval.h ~line 120) and `qtl::basic_boundary` (~line 148)
+represent this same concept in two forms:
+
+- `lex::basic_boundary` inherits from `lex::string`: the boundary (value + ε
+  displacement) is encoded as a string, suitable for persistence and lexicographic
+  comparison.
+- `qtl::basic_boundary` inherits from `std::pair<S,L>`: an in-memory pair for
+  computation.
+
+There is a conversion constructor in one direction. The design decouples serialisation
+(`lex::`) from computation (`qtl::`): deserialise via `lex::`, compute via `qtl::`.
+A `#if 0` block (~line 134) shows a disabled conversion from a tighter coupling.
+
+---
+
+## 16. `cmp_rule` in `expr.h` — interval notation that enables query optimisation
 
 The comparison rule (~line 619) does more than build a comparison AST node. When it
 detects the pattern `lower_bound <= x::x <= upper_bound` (where `x::x` is the special
 "self" symbol representing the value being tested), it **immediately constructs an
 interval literal** rather than building a subtree of two comparisons.
 
-This is a parse-time query optimisation: the resulting `expr(op::interval, {a,b})` can
-be used directly for trie pruning without any expression tree evaluation per row.
+The `lower <= x <= upper` syntax is the natural notation for expressing an interval
+value — it reads as a range constraint. The resulting `expr(op::interval, {a,b})`
+representation is also what enables trie pruning: the `admits()` check can use an
+interval node directly without per-row expression tree evaluation. The optimisation
+is a consequence of using the right representation, not the motivation for it.
 The pattern check looks for the `x::x` identifier in the fusion attribute and constructs
 the interval if found; otherwise falls through to standard comparison node construction.
 
-A reader will see what looks like a parser semantic action but is actually optimising
-the representation for the query engine's interval-arithmetic path.
+A reader will see what looks like a parser semantic action that is also the natural
+representation for range values, which happens to be exactly what the query engine's
+interval-arithmetic path needs.
 
 ---
 
@@ -471,18 +640,38 @@ two implementations were equivalent before discarding.
 
 ## 21. `radix_map.h` TODO list — explicit design boundary
 
-The TODO list at the top of `radix_map.h` (~lines 13–40) is not aspirational. It
-documents an explicit boundary: features that were considered and deliberately
-deferred. Notably:
+The TODO list at the top of `radix_map.h` (~lines 13–40) documents features that were
+considered and deliberately deferred in favour of single-user speed — a priority when
+the code was written. `dtree`/`store` shares this priority, to a greater degree.
+Notably absent:
 
 - No `erase()` / node shrinking / coalescing allocate
 - No regular expression support
-- Single-threaded only
+- No multithreading (the `multiuser` flag and "Make multithreaded using hazard pointers"
+  TODO show it was anticipated, not ruled out — per the author: "there's no reason to
+  gratuitously throw away concurrent access")
 - No byte-order conversion
 
-This radix map is designed for read-heavy persistent workloads, not as a general
-concurrent data structure. Do not assume any of these features exist or will be added
-without a deliberate design decision.
+Do not assume any of these features exist or will be added without a deliberate design
+decision, but concurrent access in particular is not architecturally excluded.
+
+---
+
+## 23. `class model` in `store.h` — model-based validation
+
+`class model` is a deliberately simple, unindexed database used for testing. It stores
+rows in a plain container and answers queries via full linear search — no trie, no
+interval pruning, no index structures. Every query visits every row.
+
+Its purpose is model-based testing: `store` (the complex, indexed implementation) is
+validated by running the same queries against both `store` and `model` and checking
+that the results agree. If the trie is built or searched incorrectly, `store`'s output
+will diverge from `model`'s, which is always correct by construction (it's too simple
+to have index bugs).
+
+The name `model` is the conventional term for this pattern — a reference implementation
+that defines correct external behaviour, used to validate a more complex one. Without
+this context, a reader might mistake it for a data-model or schema class.
 
 ---
 
@@ -499,3 +688,159 @@ type changes (e.g., by reordering alternatives or adding an optional), all downs
 because the types often remain compatible. When modifying parser rules, check all
 `at_c` usages in the corresponding action.
 
+---
+
+## 24. `operator<<` convention — everything is printable; cleanup opportunities
+
+**Design intent**: every type in the codebase is supposed to have an `ostream <<`
+output operator, primarily to make tracing and debugging easier. `out.h` is the
+dedicated home for these operators on complex types.
+
+**Historical complexity**: implementing `operator<<` for composite and recursive
+types was awkward in early C++ (pre-C++17). Some implementations may reflect that
+era — verbose, manual recursion, or workarounds that are no longer necessary.
+
+**Cleanup opportunities with modern C++**:
+- **Fold expressions** (C++17, already available): can simplify `operator<<` over
+  parameter packs and tuple-like types — replacing manual recursion with a single
+  `(os << ... << args)` fold.
+- **`std::format`** (C++20, already available): type-safe, locale-independent
+  formatting; cleaner than `<<` chains with `setw`/`setprecision` manipulators.
+- **`std::print`** (C++23, not yet available): wraps `std::format` with direct output;
+  would replace `std::cout << std::format(...)` patterns if the standard is bumped.
+
+Some updating may already have been done. Where `operator<<` implementations look
+more complex than the type warrants, fold expressions or `std::format` may be the
+right simplification. `out.h` is the first place to look.
+
+---
+
+## 30. OP_TABLE / parser coupling — maintenance trap and options
+
+`OP_TABLE` in `operators.h` and the expression parser in `expr.h` are **loosely
+coupled**. Adding an entry to `OP_TABLE` does NOT automatically make the parser
+recognise the operator. `pow` (`^`) is the existing proof: it is in `OP_TABLE` but
+has no parse rule and cannot be entered by a user.
+
+The reasons are structural:
+
+- **OP_TABLE** drives: `enum class op` ordinals, the `optable` dispatch array
+  (eval/stringify function pointers), and the pretty-printer's parenthesization logic
+  (`par()` in `tree.h`, which uses the `precedence_after` integer).
+- **`expr.h` parser** is a hand-written Boost Spirit grammar. Precedence is encoded
+  entirely in the **nesting structure** of named rules:
+  `or_rule → and_rule → not_rule → cmp_rule → sum_rule → product_rule → pre_rule → atom_rule`.
+  Each rule calls only the next-lower level as its operand, enforcing precedence by
+  grammar structure. The `precedence_after` field plays no role here.
+
+### Options for tighter coupling
+
+**Option A — Table-driven Pratt parser (replaces Spirit)**
+
+A Pratt parser uses a runtime table of operators with *binding powers* (precedences)
+and null/left denotation functions. The `precedence_after` chain already encodes the
+right information: an operator's position in the chain determines its binding power.
+The `fixity` column (`left_`, `right2`, `preop`, `in2`, etc.) maps directly to Pratt's
+null denotation (prefix) vs left denotation (infix/postfix) distinction.
+
+With this approach, adding an `X(...)` line to `OP_TABLE` and a denotation function
+would be sufficient to add a fully working operator — no separate grammar change.
+
+*Pratt vs Spirit*: Spirit is declarative and composable but the grammar structure is
+encoded in C++ types (template metaprogramming), making it resistant to table-driven
+generation. Pratt parsers are procedural and data-driven — the table IS the grammar
+for operator expressions — and are well-suited to domains where the operator set is
+defined by a table. The trade-off is that Spirit grammars are more readable for
+complex non-operator syntax (function calls, interval syntax, SQL fragments), while
+Pratt handles operator precedence more cleanly. A hybrid — Pratt for the operator
+tower, Spirit for atoms and special forms — would be natural here.
+
+**Option B — Use OP_TABLE to populate Spirit symbol tables (partial coupling)**
+
+Spirit already uses a `cmp_sym` symbols table for comparison operators. Extend this:
+use the OP_TABLE X-macro to populate `symbols<>` tables for all operator levels, so
+the mapping from operator strings to `op` enum values is always table-driven. The
+grammar nesting would still be hand-written, but adding an operator to OP_TABLE would
+at least make it tokenizable without a separate edit. Manual grammar rule changes would
+still be needed to wire the new operator into the precedence ladder.
+
+**Option C — Assertion / test (cheapest)**
+
+Add a compile-time or test-time check that the set of non-zero-arity, parseable
+operators in OP_TABLE matches a known set in the parser. Fails loudly when they drift.
+Not true coupling, but catches the `pow` class of bug early.
+
+Option B is the best incremental improvement given the existing Spirit codebase.
+Option A is the right long-term design if the parser needs significant extension.
+
+---
+
+## 31. Dedup, canonical-path traversal, and parallel search
+
+### Why dedup exists
+
+`dedup_search` is a direct consequence of the lattice being a DAG: shared `vertex`
+nodes (via `shared_ptr`) are reachable via multiple paths, so traversal can yield the
+same leaf rows more than once. The current fix is a per-traversal visited set.
+
+### Making dedup unnecessary: canonical-path traversal
+
+Define for each shared node a *canonical parent* (e.g., the path that created it, or
+the lexicographically smallest parent). During traversal:
+
+```
+visit(node, via_parent):
+    if node.canonical_parent ≠ via_parent: return   // non-canonical, skip
+    result = predicate.admits(node)
+    if result == F: return                           // prune
+    if result == T: emit all rows; return            // include all
+    for child in children sorted by efficiency_criterion:
+        visit(child, node)
+```
+
+Non-duplication becomes structural (one immutable field per node, one comparison per
+visit) rather than algorithmic (a visited set allocated per traversal).
+
+Maintenance cost: when a split restructures the lattice (database cracking), canonical
+parents of reparented nodes must be updated. This is exactly the bookkeeping `confluence`
+was intended to support.
+
+### Choosing traversal order for efficiency
+
+With canonical-path dedup, the order children are visited is a free policy choice,
+independent of correctness. Candidates:
+
+- **Dense subtrees first** — for K-result queries, find results sooner
+- **High-selectivity first** — subtrees where the predicate is tightest, more likely
+  to resolve to T or F, less likely to yield U and require recursion
+- **Estimated match density** — if row counts are stored at interior nodes, use them
+  to rank children
+
+### Parallel traversal
+
+Canonical-path traversal is naturally parallel because the "should I process this
+node?" check reads an immutable field — no synchronization needed. Multiple threads
+can traverse different subtrees simultaneously:
+
+- When a U node has multiple children, dispatch them to a thread pool in
+  efficiency-priority order
+- Each thread checks its canonical-parent independently, skips non-canonical arrivals
+  without coordination
+- Only output collection requires synchronization
+
+**Advantages**: broad queries that generate many U nodes benefit significantly on
+multi-core hardware. Dispatching in efficiency order means results and early-termination
+conditions are reached sooner.
+
+**Complications to resolve before implementing**:
+- The coroutine-based `recursive_generator` is inherently sequential; parallel traversal
+  needs a different output mechanism (thread-safe queue, callback, or futures)
+- K-result queries need a shared cancellation signal so threads stop when enough
+  results have been found
+- Result ordering becomes non-deterministic; post-sort or priority-queue collection
+  required if order matters
+- The lattice was designed single-user; none of this infrastructure currently exists
+  (though concurrent access is not architecturally excluded — see note 31 on radix_map)
+
+Tight queries that resolve to T or F at high levels see little benefit from
+parallelism; the gain is real for broad queries over large datasets.

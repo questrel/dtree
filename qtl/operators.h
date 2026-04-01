@@ -27,6 +27,7 @@ X(greater,2,>,in2,plus)			 \
 X(greater_equal,2,>=,in2,plus)			 \
 X(less_equal,2,<=,in2,plus)			 \
 X(complement,1,~,preop,complement)		 \
+/* interval: lo <= x::x < hi  (x::x = "x such that", set-builder notation) */ \
 X(interval,2,<= x::x <,interval,interval)		 \
 X(logical_not,1,!,preop,equal_to)		 \
  /*X(bit_and,02,&,left,equal_to)*/		 \
@@ -34,6 +35,14 @@ X(logical_not,1,!,preop,equal_to)		 \
  X(logical_and,2,&&,left_,logical_and)	 \
 X(logical_or,2,||,left_,logical_or) \
 // end define OP_TABLE
+
+/* [interval syntax footnote]
+   lo <= x::x < hi reads as {x : lo ≤ x < hi} in set-builder notation — "the set of
+   all x such that lo ≤ x < hi".  C++ :: is borrowed to suggest the mathematical
+   "such that" colon; it carries no scope-resolution meaning here.  Conventional
+   bracket syntax [lo,hi) would be clearer but is unparseable as a C++ expression;
+   (lo,hi) parses only in limited contexts; so lo <= x::x < hi was chosen as the
+   closest parseable approximation of standard mathematical interval notation. */
 #else
 //X(name,arity,name,operator,prefix|postfix|left|right,precedence after)
 #define OP_TABLE \

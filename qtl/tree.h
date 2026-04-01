@@ -19,6 +19,11 @@ namespace qtl{
   //  template< class C>
   //class tree;
 
+// lazyvec: lazy transform over a container. Predates std::ranges/views::transform.
+// Has two function slots:
+//   p — per-element transform (analogous to views::transform)
+//   f — whole-vector reduce (no direct std::ranges equivalent; preserve if modernising)
+// The const_iterator applies p on dereference, deferring the transform until needed.
 template<class A,template<typename...> typename V=std::vector,class P=A>
 class lazyvec{
    const V<P>& v;

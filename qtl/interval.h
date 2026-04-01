@@ -915,10 +915,10 @@ bool contains0()const{
      // U+FE47 - U+FFFD PRESENTATION FORM FOR VERTICAL LEFT SQUARE BRACKET - REPLACEMENT CHARACTER
 
      // U+10000 - U+1FFFD LINEAR B SYLLABLE B008 A - CHEESE WEDGE (U+1F9C0)
-#define pow  pow // pow  U+1F811 Upwards Arrow with Small Equilateral Arrowhead
-#define pow  pow // pow  U+1F815 Upwards Arrow with Equilateral Arrowhead
-#define pow  pow // pow  U+1F845 Upwards Heavy Arrow
-#define pow  pow // pow  U+1F861 Wide-Headed Upwards Light Barb Arrow
+     //#define pow  pow // pow  U+1F811 Upwards Arrow with Small Equilateral Arrowhead
+     //#define pow  pow // pow  U+1F815 Upwards Arrow with Equilateral Arrowhead
+     //#define pow  pow // pow  U+1F845 Upwards Heavy Arrow
+     //#define pow  pow // pow  U+1F861 Wide-Headed Upwards Light Barb Arrow
 
      // U+20000 - U+2FFFD
 
